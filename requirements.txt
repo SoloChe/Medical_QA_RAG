@@ -1,0 +1,22 @@
+--find-links https://download.pytorch.org/whl/cu118
+torch
+torchvision
+transformers
+datasets
+accelerate
+bitsandbytes
+peft
+wandb
+mlflow
+faiss-gpu
+sentence-transformers
+flask
+boto3
+awscli
+uvicorn
+fastapi
+gunicorn
+tqdm
+sentencepiece
+gputil 
+psutil
