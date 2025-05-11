@@ -10,7 +10,7 @@ import logging
 from datetime import datetime
 import psutil
 import GPUtil
-
+from utils import compute_metrics, SaveQAExamplesCallback
 
 
 
@@ -57,6 +57,10 @@ def train_lora(args):
         json.dump(vars(args), f, indent=4)
     logger.info(f"Configuration saved to {config_path}")
 
+    # Set the device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logger.info(f"Using device: {device}")
+    
     # Load the base model and tokenizer
     tokenizer = AutoTokenizer.from_pretrained(args.model_name, trust_remote_code=True)
 
@@ -67,7 +71,7 @@ def train_lora(args):
         tokenizer.add_special_tokens({'pad_token': '[PAD]'})
         model.resize_token_embeddings(len(tokenizer))
         logger.info(f"Added [PAD] token and resized model embeddings")
-        
+    
     model = AutoModelForCausalLM.from_pretrained(args.model_name, trust_remote_code=True)
     logger.info(f"Loaded model and tokenizer from {args.model_name}")
 
@@ -89,8 +93,9 @@ def train_lora(args):
                                       remove_columns=train_dataset.column_names)
     
     val_dataset = load_dataset("json", data_files=args.val_file, split='train')
-    val_dataset = val_dataset.map(lambda examples: preprocess_function(examples, tokenizer), batched=True, 
-                                  remove_columns=val_dataset.column_names)
+    val_dataset = val_dataset.map(lambda examples: preprocess_function(examples, tokenizer), batched=True)
+    # select only the first 100 examples for validation
+    val_dataset = val_dataset.select(range(100))
     
     logger.info(f"Loaded and preprocessed training data from {args.train_file}")
     logger.info(f"Loaded and preprocessed validation data from {args.val_file}")
@@ -98,7 +103,7 @@ def train_lora(args):
     
     # Training arguments
     training_args = TrainingArguments(
-        run_name=args.wandb_project,
+        run_name="MedicalQA_LoRA_Fine_Tuning",
         output_dir=args.output_dir,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
@@ -114,17 +119,28 @@ def train_lora(args):
         save_total_limit=2,
         # gradient_checkpointing=True,  # Memory optimization
         optim="adamw_torch",
-        # ddp_find_unused_parameters=True,  # For multi-GPU
+        ddp_find_unused_parameters=False,  # For multi-GPU
         remove_unused_columns=False, # important
+        deepspeed=None,  # Use DeepSpeed if needed 
     )
     logger.info("Training arguments configured")
 
+    callback = SaveQAExamplesCallback(
+        logger=logger,
+        val_dataset=val_dataset,
+        tokenizer=tokenizer,
+        output_dir=args.output_dir,
+        num_examples=5,
+        wandb_run=wandb.run
+    )
     # Initialize the Trainer
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
+        # compute_metrics=compute_metrics,
+        callbacks=[callback],
     )
 
     # Start training

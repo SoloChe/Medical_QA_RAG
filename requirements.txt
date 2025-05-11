@@ -1,6 +1,4 @@
---find-links https://download.pytorch.org/whl/cu118
 torch
-torchvision
 transformers
 datasets
 accelerate
@@ -20,3 +18,5 @@ tqdm
 sentencepiece
 gputil 
 psutil
+rank-bm25
+

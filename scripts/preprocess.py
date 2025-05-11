@@ -60,6 +60,8 @@ def preprocess_medmcqa(data_dir, output_dir, val_ratio=0.1):
     print(f"Total validation samples: {len(val_data)}")
 
 
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_zip", type=str, default="./data/raw/data.zip", help="Path to the MedMCQA data zip file")
