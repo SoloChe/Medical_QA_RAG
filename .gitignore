@@ -1,6 +1,6 @@
 /slurm_out
 /saved_models
 /data
-/notebooks
+/notebooks/test*
 /wandb
 /*/__pycache__

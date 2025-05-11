@@ -19,4 +19,5 @@ sentencepiece
 gputil 
 psutil
 rank-bm25
+trl
 
