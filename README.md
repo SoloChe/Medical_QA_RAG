@@ -44,8 +44,7 @@ medical_qa_rag/
 │   ├── train_lora_hf.sh         # Model configuration file
 │   └── train_lora_ppo_hf.sh     # Training configuration file
 ├── deployment/
-│   ├── Dockerfile               # Dockerfiles for AWS deployment
-│   ├── requirements.txt         # Docker requirements
+│   ├── Dockerfile               # Dockerfiles for AWS deployment 
 │   └── pipeline/                # SageMaker pipeline scripts and configuration
 └── notebooks/
     └── demo.ipynb               # Jupyter notebook for demo
