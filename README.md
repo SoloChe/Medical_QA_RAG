@@ -1,9 +1,12 @@
 Medical QA RAG System (updating)
 ========================
-This repository contains a medical question-answering system that utilizes a Retrieval-Augmented Generation (RAG) approach. The system is designed to answer medical questions by retrieving relevant documents from a knowledge base and generating responses using a fine-tuned language model.
+This repository contains a medical question-answering system that utilizes a Retrieval-Augmented Generation (RAG) approach. The system is designed to answer medical questions by retrieving relevant documents from a knowledge base ([MedMCQA](https://medmcqa.github.io/)) and generating responses from multi-agent pipeline. Finally, the system can be deployed on AWS using Docker and SageMaker.
+
+More details will be provided in the future.
 
 The system is built using the following components:
 
+```
 medical_qa_rag/
 ├── README.md
 ├── requirements.txt
@@ -37,3 +40,4 @@ medical_qa_rag/
 │   └── sagemaker/               # SageMaker scripts and configuration
 └── notebooks/
     └── analysis.ipynb           # Jupyter notebook for exploratory analysis
+```
