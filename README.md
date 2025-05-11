@@ -1,13 +1,12 @@
 # Medical QA RAG System (updating)
-
 This repository contains a medical question-answering system that utilizes a Retrieval-Augmented Generation (RAG) approach. The system is designed to answer medical questions by retrieving relevant documents from a knowledge base ([MedMCQA](https://medmcqa.github.io/)) and generating responses from multi-agent pipeline. Finally, the system can be deployed on AWS using Docker and SageMaker.
 
 ## Agent Pipeline
-Fine-tuned Generator Model: mistralai/Mistral-7B-v0.1
-Retriever Model: BM25
-Contextualizer Model: mistralai/Mistral-7B-v0.1
-Fact-Checker Model: all-mpnet-base-v2 (optional)
-Summarizer Model: facebook/bart-large-cnn (optional)
+1. Retriever Model: BM25
+2. Contextualizer Model: mistralai/Mistral-7B-v0.1
+3. Fine-tuned Generator Model: mistralai/Mistral-7B-v0.1
+4. Fact-Checker Model: all-mpnet-base-v2 (optional)
+5. Summarizer Model: facebook/bart-large-cnn (optional)
 
 More details will be provided in the future.
 
