@@ -3,15 +3,15 @@ import argparse
 import torch
 import wandb
 from datasets import load_dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
-from peft import LoraConfig, get_peft_model, PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel
 from trl import PPOTrainer, PPOConfig
 import json
 import logging
 from datetime import datetime
 import psutil
 import GPUtil
-from utils import save_qa_examples
+from utils import compute_metrics, SaveQAExamplesCallback, save_qa_examples
 
 
 def log_system_info(logger):
@@ -27,7 +27,7 @@ def preprocess_function(examples, tokenizer, max_length=512):
     return tokenizer(examples["instruction"], text_target=examples["response"], truncation=True, padding="max_length", max_length=max_length)
 
 
-def train_lora_ppo(args):
+def train_ppo(args):
     # Configure logger
     logging.basicConfig(
         level=logging.INFO,
@@ -41,32 +41,23 @@ def train_lora_ppo(args):
 
     # Log start time
     start_time = datetime.now()
-    logger.info("Starting LoRA + PPO Fine-Tuning...")
+    logger.info("Starting PPO Fine-Tuning...")
     logger.info(f"Start Time: {start_time}")
     log_system_info(logger)
+    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Initialize Weights & Biases
-    wandb.init(project=args.wandb_project, name='LoRA_PPO_Fine_Tuning', config=vars(args))
+    wandb.init(project=args.wandb_project, name='PPO_Fine_Tuning', config=vars(args))
 
     # Load the tokenizer
     tokenizer = AutoTokenizer.from_pretrained(args.model_name, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    # Load the base model and LoRA adapter
-    base_model = AutoModelForCausalLM.from_pretrained(args.model_name, trust_remote_code=True)
-
-    # Reinitialize LoRA adapter for training
-    lora_config = LoraConfig(
-        r=8,
-        lora_alpha=32,
-        target_modules=["q_proj", "v_proj"],
-        lora_dropout=0.1,
-        bias="none",
-        task_type="CAUSAL_LM"
-    )
-    model = get_peft_model(base_model, lora_config).to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    logger.info(f"LoRA configuration applied with r={lora_config.r}, alpha={lora_config.lora_alpha}")
+    # Load the base model with the LoRA adapter
+    model = PeftModel.from_pretrained(args.model_name, args.adapter_dir).to(device)
+    logger.info(f"Loaded LoRA fine-tuned model from {args.adapter_dir}")
 
     # Load the training dataset
     train_dataset = load_dataset("json", data_files=args.train_file, split="train")
@@ -124,7 +115,7 @@ def train_lora_ppo(args):
     # Save the final model
     model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
-    logger.info(f"LoRA + PPO fine-tuned model saved to {args.output_dir}")
+    logger.info(f"PPO fine-tuned model saved to {args.output_dir}")
 
     # Log end time
     end_time = datetime.now()
@@ -138,6 +129,7 @@ def main():
     parser.add_argument('--train_file', type=str, default='./data/processed/medmcqa_train.jsonl', help='Path to the training file')
     parser.add_argument('--val_file', type=str, default='./data/processed/medmcqa_val.jsonl', help='Path to the validation file')
     parser.add_argument('--model_name', type=str, default='mistralai/Mistral-7B-v0.1', help='Base model name')
+    parser.add_argument('--adapter_dir', type=str, default='./saved_models/lora_finetuned', help='Directory to the LoRA fine-tuned model')
     parser.add_argument('--output_dir', type=str, default='./models/lora_ppo_finetuned', help='Directory to save the final model')
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size per device')
     parser.add_argument('--learning_rate', type=float, default=2e-4, help='Learning rate')
@@ -148,8 +140,8 @@ def main():
     parser.add_argument('--logging_steps', type=int, default=50, help='Logging steps')
     args = parser.parse_args()
 
-    # Start LoRA + PPO training
-    train_lora_ppo(args)
+    # Start PPO training
+    train_ppo(args)
 
 
 if __name__ == '__main__':

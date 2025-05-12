@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name='train_lora_ppo'
+#SBATCH --job-name='train_ppo'
 #SBATCH --nodes=1
 #SBATCH --ntasks=16
 #SBATCH --cpus-per-task=1               
@@ -33,11 +33,12 @@ torchrun --nproc_per_node=1 \
          --train_file ./data/processed/medmcqa_train.jsonl \
          --val_file ./data/processed/medmcqa_val.jsonl \
          --model_name mistralai/Mistral-7B-v0.1 \
+         --adapter_dir ./saved_models/lora_finetuned \
          --output_dir ./saved_models/lora_ppo_finetuned \
          --batch_size 3 \
          --learning_rate 2e-4 \
          --ppo_epochs 3 \
-         --max_steps 2000 \
+         --max_steps 1000 \
          --save_steps 100 \
          --logging_steps 50 \
          --wandb_project Medical_QA_LoRA_PPO

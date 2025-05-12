@@ -5,7 +5,7 @@ This repository contains a medical question-answering system that utilizes a Ret
 [05/09/2025 update]: Debugged the training scripts and the RAG pipeline. The system is now fully functional.
 [05/10/2025 update]: Finished the training scripts of LoRa+PPO. Finished the preparation of the deployment scripts except `predictor.py`. 
 
-[Next]: Exploring the reinforcement learning with PPO and distributed training with deep speed to replace DDP. Trying to eliminate the repeated generation.
+[Next]: Exploring the reinforcement learning (PPO) for alignment and distributed training with deep speed to replace DDP. Trying to eliminate the repeated generation.
 
 ## Agent Pipeline
 1. Retriever Model: BM25
@@ -15,7 +15,7 @@ This repository contains a medical question-answering system that utilizes a Ret
 5. Summarizer Model: facebook/bart-large-cnn (optional)
 
 ## Fine-tuning
-The generator model is fine-tuned using either LoRa or LoRa+PPO. The configuration files for both methods are provided in the `configs` directory. The fine-tuning process is performed using the Hugging Face Trainer API (LoRa) and customized training loops (LoRa+PPO) on HPC (Slurm job schedular) with Nvidia-A100@80GB. The training scripts are located in the `scripts` directory. The fine-tuned models are saved in the `saved_models` directory (not uploaded).
+The generator model is fine-tuned using LoRa and PPO for alignment. The configuration files for both methods are provided in the `configs` directory. The fine-tuning process is performed using the Hugging Face Trainer API (LoRa) and customized training loops (LoRa+PPO) on HPC (Slurm job schedular) with Nvidia-A100@80GB. The training scripts are located in the `scripts` directory. The fine-tuned models are saved in the `saved_models` directory (not uploaded).
 
 ## Deployment
 The system can be deployed on AWS using Docker and SageMaker. The deployment scripts and configuration files are located in the `deployment` directory. The Dockerfile is used to create a container image for the application, which can be deployed on AWS SageMaker. 
