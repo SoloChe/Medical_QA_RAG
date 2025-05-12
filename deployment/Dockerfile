@@ -21,7 +21,7 @@ ENV PYTHONDONTWRITEBYTECODE=TRUE
 ENV PATH="/opt/program:${PATH}"
 ENV MODEL_PATH="/opt/ml/model"
 
-COPY inference /opt/program
+COPY pipeline /opt/program
 WORKDIR /opt/program
 
 RUN chmod +x serve
