@@ -3,7 +3,7 @@ import argparse
 import torch
 import wandb
 from datasets import load_dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments, DataCollatorForLanguageModeling
+from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
 from peft import LoraConfig, get_peft_model
 import json
 import logging
@@ -11,6 +11,7 @@ from datetime import datetime
 import psutil
 import GPUtil
 from utils import compute_metrics, SaveQAExamplesCallback
+import time
 
 
 
@@ -23,12 +24,15 @@ def log_system_info(logger):
         logger.info(f"GPU {gpu.id}: {gpu.name}, Memory Free: {gpu.memoryFree}MB, Memory Used: {gpu.memoryUsed}MB, Memory Total: {gpu.memoryTotal}MB, Utilization: {gpu.load * 100:.2f}%")
 
 
-
 def preprocess_function(examples, tokenizer, max_length=512):
     return tokenizer(examples["instruction"], text_target=examples["response"], truncation=True, padding="max_length", max_length=max_length)
 
 
 def train_lora(args):
+    # Create output directory with timestamp
+    args.output_dir = os.path.join(args.output_dir, time.strftime("%Y%m%d-%H%M%S"))
+    os.makedirs(args.output_dir, exist_ok=True)
+    
     # Configure logger
     logging.basicConfig(
         level=logging.INFO,
@@ -39,6 +43,7 @@ def train_lora(args):
         ]
     )
     logger = logging.getLogger(__name__)
+    
 
     # Log start time
     start_time = datetime.now()
@@ -51,7 +56,6 @@ def train_lora(args):
     wandb.init(project=args.wandb_project, name='LoRA_Fine_Tuning', config=vars(args))
 
     # Save the config to a local file for reference
-    os.makedirs(args.output_dir, exist_ok=True)
     config_path = os.path.join(args.output_dir, 'config.json')
     with open(config_path, 'w') as f:
         json.dump(vars(args), f, indent=4)
@@ -77,11 +81,11 @@ def train_lora(args):
 
     # Prepare the LoRA configuration
     lora_config = LoraConfig(
-        r=8,
-        lora_alpha=32,
-        target_modules=["q_proj", "v_proj"],
-        lora_dropout=0.1,
-        bias="none",
+        r=4,
+        lora_alpha=16,
+        target_modules=["q_proj", "v_proj", "k_proj"],
+        lora_dropout=0.15,
+        bias="lora_only",
         task_type="CAUSAL_LM"
     )
     model = get_peft_model(model, lora_config)
@@ -109,6 +113,7 @@ def train_lora(args):
         per_device_eval_batch_size=args.batch_size,
         learning_rate=args.learning_rate,
         num_train_epochs=args.num_train_epochs,
+        gradient_accumulation_steps=2,
         logging_dir=os.path.join(args.output_dir, 'logs'),
         logging_steps=args.logging_steps,
         save_steps=args.save_steps,
@@ -116,9 +121,10 @@ def train_lora(args):
         eval_steps=args.save_steps,
         report_to=['wandb'],
         fp16=True,
-        save_total_limit=2,
+        save_total_limit=10,
         # gradient_checkpointing=True,  # Memory optimization
         optim="adamw_torch",
+        weight_decay=0.01,
         ddp_find_unused_parameters=False,  # For multi-GPU
         remove_unused_columns=False, # important
         deepspeed=None,  # Use DeepSpeed if needed 
@@ -139,7 +145,7 @@ def train_lora(args):
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
-        # compute_metrics=compute_metrics,
+        compute_metrics=compute_metrics,
         callbacks=[callback],
     )
 

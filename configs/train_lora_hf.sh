@@ -35,10 +35,10 @@ torchrun --nproc_per_node=1 \
         --model_name mistralai/Mistral-7B-v0.1 \
         --output_dir ./saved_models/lora_finetuned \
         --batch_size 3 \
-        --learning_rate 2e-4 \
-        --num_train_epochs 3 \
+        --learning_rate 1e-5 \
+        --num_train_epochs 2 \
         --logging_steps 50 \
-        --save_steps 500 \
+        --save_steps 1000 \
         --wandb_project MedicalQA_LoRA_Fine_Tuning \
 
 

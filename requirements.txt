@@ -20,4 +20,5 @@ gputil
 psutil
 rank-bm25
 trl
+rouge-score
 

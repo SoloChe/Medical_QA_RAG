@@ -6,7 +6,9 @@ import os
 import torch
 from transformers import TrainerCallback
 
+
 def compute_metrics(pred):
+    # Extract labels and predictions
     labels = pred.label_ids
     preds = np.argmax(pred.predictions, axis=-1)
 
@@ -15,16 +17,18 @@ def compute_metrics(pred):
     labels = labels[mask]
     preds = preds[mask]
 
+    # Basic Classification Metrics
     accuracy = accuracy_score(labels, preds)
-    precision = precision_score(labels, preds, average='weighted')
-    recall = recall_score(labels, preds, average='weighted')
-    f1 = f1_score(labels, preds, average='weighted')
+    precision = precision_score(labels, preds, average='weighted', zero_division=0)
+    recall = recall_score(labels, preds, average='weighted', zero_division=0)
+    f1 = f1_score(labels, preds, average='weighted', zero_division=0)
 
+    
     return {
         "accuracy": accuracy,
         "precision": precision,
         "recall": recall,
-        "f1": f1
+        "f1": f1,
     }
 
 
