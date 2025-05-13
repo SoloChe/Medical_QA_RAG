@@ -4,8 +4,11 @@ This repository contains a medical question-answering system that utilizes a Ret
 The current knowledge base ([PubMedQA](https://pubmedqa.github.io/)) is for testing only. The final knowledge base will be a collection of medical documents, including PubMed articles, clinical guidelines, and other relevant resources. The system is designed to be extensible and can be easily adapted to different domains or datasets.
 
 [05/08/2025 update]: Finished the training scripts of LoRa and RAG pipeline.
+
 [05/09/2025 update]: Debugged the training scripts and the RAG pipeline. The system is now fully functional.
+
 [05/10/2025 update]: Finished the training scripts of LoRa+PPO. Finished the preparation of the deployment scripts except `predictor.py`. 
+
 [05/12/2025 update]: Preprocessed PubMedQA for knowledge base. Changed the retriever from BM25 to FAISS+BioBERT. 
 
 
