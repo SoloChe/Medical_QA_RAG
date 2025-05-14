@@ -11,13 +11,16 @@ The current knowledge base ([PubMedQA](https://pubmedqa.github.io/)) is for test
 
 [05/12/2025 update]: Preprocessed PubMedQA for knowledge base. Changed the retriever from BM25 to FAISS+BioBERT. 
 
+[05/13/2025 update]: Changed model to `mistralai/Mistral-7B-Instruct-v0.2` for generator and re-preprocessed data (adding tags) for fine-tuning.
+
+
 
 [Next]: Exploring the reinforcement learning (PPO) for alignment. Trying to eliminate the repeated generation.
 
 ## Agent Pipeline
 1. Retriever Model: FAISS+BioBERT
 2. Contextualizer Model: mistralai/Mistral-7B-v0.1
-3. Fine-tuned Generator Model: mistralai/Mistral-7B-v0.1 on [MedMCQA](https://medmcqa.github.io/) dataset
+3. Fine-tuned Generator Model: mistralai/Mistral-7B-Instruct-v0.2 on [MedMCQA](https://medmcqa.github.io/) dataset
 4. Fact-Checker Model: all-mpnet-base-v2 (optional)
 5. Summarizer Model: facebook/bart-large-cnn (optional)
 

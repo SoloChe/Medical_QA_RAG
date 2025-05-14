@@ -8,7 +8,7 @@
 #SBATCH -p general                
 #SBATCH -q public
             
-#SBATCH -t 00-12:00:00               
+#SBATCH -t 01-00:00:00               
             
 #SBATCH -e ./slurm_out/slurm.%j.err
 #SBATCH -o ./slurm_out/slurm.%j.out
@@ -30,15 +30,15 @@ torchrun --nproc_per_node=1 \
          --rdzv_backend=c10d\
          --rdzv_endpoint=$MASTER_ADDR:$MASTER_PORT\
         scripts/train_lora_hf.py \
-        --train_file ./data/processed/medmcqa_train.jsonl \
-        --val_file ./data/processed/medmcqa_val.jsonl \
-        --model_name mistralai/Mistral-7B-v0.1 \
+        --train_file ./data/processed/mistral_train.jsonl \
+        --val_file ./data/processed/mistral_val.jsonl \
+        --model_name mistralai/Mistral-7B-Instruct-v0.2 \
         --output_dir ./saved_models/lora_finetuned \
         --batch_size 3 \
         --learning_rate 1e-5 \
         --num_train_epochs 2 \
-        --logging_steps 50 \
-        --save_steps 1000 \
+        --logging_steps 100 \
+        --save_steps 2000 \
         --wandb_project MedicalQA_LoRA_Fine_Tuning \
 
 

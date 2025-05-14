@@ -23,9 +23,14 @@ def log_system_info(logger):
     for gpu in gpus:
         logger.info(f"GPU {gpu.id}: {gpu.name}, Memory Free: {gpu.memoryFree}MB, Memory Used: {gpu.memoryUsed}MB, Memory Total: {gpu.memoryTotal}MB, Utilization: {gpu.load * 100:.2f}%")
 
-
-def preprocess_function(examples, tokenizer, max_length=512):
-    return tokenizer(examples["instruction"], text_target=examples["response"], truncation=True, padding="max_length", max_length=max_length)
+# Preprocessing function
+def preprocess_function(example, tokenizer, max_length=512):
+    text = example["text"]
+    # Tokenize
+    tokenized = tokenizer(text, truncation=True, padding="max_length", max_length=max_length)
+    # Labels = input_ids
+    tokenized["labels"] = tokenized["input_ids"].copy()
+    return tokenized
 
 
 def train_lora(args):
@@ -111,6 +116,7 @@ def train_lora(args):
         output_dir=args.output_dir,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
+        label_names=["labels"],
         learning_rate=args.learning_rate,
         num_train_epochs=args.num_train_epochs,
         gradient_accumulation_steps=2,
@@ -137,7 +143,8 @@ def train_lora(args):
         tokenizer=tokenizer,
         output_dir=args.output_dir,
         num_examples=5,
-        wandb_run=wandb.run
+        wandb_run=wandb.run,
+        save_steps=args.save_steps,
     )
     # Initialize the Trainer
     trainer = Trainer(

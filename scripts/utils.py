@@ -19,11 +19,10 @@ def compute_metrics(pred):
 
     # Basic Classification Metrics
     accuracy = accuracy_score(labels, preds)
-    precision = precision_score(labels, preds, average='weighted', zero_division=0)
-    recall = recall_score(labels, preds, average='weighted', zero_division=0)
-    f1 = f1_score(labels, preds, average='weighted', zero_division=0)
+    precision = precision_score(labels, preds, average="weighted", zero_division=0)
+    recall = recall_score(labels, preds, average="weighted", zero_division=0)
+    f1 = f1_score(labels, preds, average="weighted", zero_division=0)
 
-    
     return {
         "accuracy": accuracy,
         "precision": precision,
@@ -32,9 +31,17 @@ def compute_metrics(pred):
     }
 
 
-
 class SaveQAExamplesCallback(TrainerCallback):
-    def __init__(self, logger, val_dataset, tokenizer, output_dir, num_examples=5, save_steps=500, wandb_run=None):
+    def __init__(
+        self,
+        logger,
+        val_dataset,
+        tokenizer,
+        output_dir,
+        num_examples=5,
+        save_steps=500,
+        wandb_run=None,
+    ):
         super().__init__()
         self.val_dataset = val_dataset
         self.tokenizer = tokenizer
@@ -47,13 +54,33 @@ class SaveQAExamplesCallback(TrainerCallback):
     def on_save(self, args, state, control, model=None, **kwargs):
         if state.global_step % self.save_steps == 0:
             step = state.global_step
-            output_file = os.path.join(self.output_dir, f"sample_qa_examples_step_{step}.json")
-            self.logger.info(f"Saving {self.num_examples} QA examples at step {step}...")
-            save_qa_examples(model, self.tokenizer, self.val_dataset, output_file, num_examples=self.num_examples, wandb_run=self.wandb_run, logger=self.logger)
+            output_file = os.path.join(
+                self.output_dir, f"sample_qa_examples_step_{step}.json"
+            )
+            self.logger.info(
+                f"Saving {self.num_examples} QA examples at step {step}..."
+            )
+            save_qa_examples(
+                model,
+                self.tokenizer,
+                self.val_dataset,
+                output_file,
+                num_examples=self.num_examples,
+                wandb_run=self.wandb_run,
+                logger=self.logger,
+            )
 
-# TODO: modify the corresponding data args to save the examples  
-def save_qa_examples(model, tokenizer, val_dataset, output_file, num_examples=2, logger=None, wandb_run=None):
-    
+
+def save_qa_examples(
+    model,
+    tokenizer,
+    val_dataset,
+    output_file,
+    num_examples=2,
+    logger=None,
+    wandb_run=None,
+):
+
     logger.info(f"Saving {num_examples} QA examples to {output_file}")
     model.eval()
     examples = []
@@ -62,28 +89,42 @@ def save_qa_examples(model, tokenizer, val_dataset, output_file, num_examples=2,
     for sample in val_dataset.select(range(num_examples)):
         # Prepare the input and generate the response
         instruction_text = sample["instruction"]
-        true_response_text = sample["response"]
+        true_response_text = sample["response"][1:-5] # remove the fist space and last </s> token
         
-        instruction_token = torch.tensor(sample["input_ids"]).unsqueeze(0)
-        attention_mask = torch.tensor(sample["attention_mask"]).unsqueeze(0)
-        # put inputs on the same device as the model
-        instruction_token = instruction_token.to(model.device)
-        attention_mask = attention_mask.to(model.device)
-        
-        model_output = model.generate(input_ids=instruction_token, attention_mask=attention_mask, max_new_tokens=200)
+        instruction_token = tokenizer(
+            instruction_text,
+            truncation=True,
+            padding="max_length",
+            max_length=512,
+            return_tensors="pt").to(model.device)
+
+        model_output = model.generate(
+            **instruction_token,
+            max_new_tokens=50,
+            do_sample=False,
+            num_beams=1
+        )
         generated_response = tokenizer.decode(model_output[0], skip_special_tokens=True)
-        
+
         # Add to local JSON
-        examples.append({
-            "instruction": instruction_text,
-            "true_response": true_response_text,
-            "generated_response": generated_response
-        })
-        
+        examples.append(
+            {
+                "instruction": instruction_text,
+                "true_response": true_response_text,
+                "generated_response": generated_response,
+            }
+        )
+
         # Add to WandB table if provided
         if wandb_run is not None:
-            table_data.append([examples[-1]['instruction'], examples[-1]['true_response'], examples[-1]['generated_response']])
-    
+            table_data.append(
+                [
+                    examples[-1]["instruction"],
+                    examples[-1]["true_response"],
+                    examples[-1]["generated_response"],
+                ]
+            )
+
     # Log to WandB if available
     if wandb_run is not None:
         columns = ["Instruction", "True Response", "Generated Response"]
