@@ -4,3 +4,4 @@
 /notebooks/test*
 /wandb
 /*/__pycache__
+/notes*
