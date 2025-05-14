@@ -15,7 +15,7 @@ The current knowledge base ([PubMedQA](https://pubmedqa.github.io/)) is for test
 
 
 
-[Next]: Exploring the reinforcement learning (PPO) for alignment. Trying to eliminate the repeated generation.
+[Next]: Exploring the reinforcement learning (PPO) for alignment.
 
 ## Agent Pipeline
 1. Retriever Model: FAISS+BioBERT
