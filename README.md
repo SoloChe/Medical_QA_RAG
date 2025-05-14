@@ -15,7 +15,7 @@ The current knowledge base ([PubMedQA](https://pubmedqa.github.io/)) is for test
 
 
 
-[Next]: Exploring the reinforcement learning (PPO) for alignment. Also, the prompt engineering for the generator model needs to be revised. I also need to add more process in the retriever model such as reranking.
+[Next]: Exploring the reinforcement learning (PPO) for alignment. Also, the prompt engineering for the generator model needs to be revised and I want to add explanation part. I also need to add more process in the retriever model such as reranking. 
 
 ## Agent Pipeline
 1. Retriever Model: FAISS+BioBERT
