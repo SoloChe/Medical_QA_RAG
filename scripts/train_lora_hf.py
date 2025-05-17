@@ -171,7 +171,7 @@ def train_lora(args):
     logger.info(f"Training completed in {duration}")
 
     # Log final system info
-    log_system_info()
+    log_system_info(logger)
 
 
 def main():
