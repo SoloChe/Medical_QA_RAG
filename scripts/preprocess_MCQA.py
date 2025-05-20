@@ -41,9 +41,6 @@ REPLACEMENTS = {
     "correct": ["right", "accurate"]
 }
 
-#TODO: Implement the function to add explanations
-def adding_explanations(text):
-    pass
 
 def apply_synonym_replacement(template):
     replaced_text = template
@@ -107,9 +104,6 @@ def preprocess_medmcqa(data_dir, output_dir, val_ratio=0.1):
                 response = f" {answer} </s>"
                 text = f"{instruction}{response}"
                 
-                # Optional: Add explanations
-                explanation = adding_explanations(f'{prompt_text} {answer}')
-            
                 f.write(json.dumps({"instruction": instruction, "response": response, "text": text}) + "\n")
                 count += 1
         print(f"Saved {count} samples to {output_file}")

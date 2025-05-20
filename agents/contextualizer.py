@@ -1,18 +1,27 @@
-import os
 from transformers import AutoTokenizer
 
 class Contextualizer:
-    def __init__(self, model_name="mistralai/Mistral-7B-v0.1", max_length=512, top_k=3):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    def __init__(self, model_name="mistralai/Mistral-7B-Instruct-v0.2", max_length=1024, top_k=3, device='cpu'):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device=device)
         self.max_length = max_length
         self.top_k = top_k
 
     def format_context(self, query, passages):
-        # Limit to top-k passages
+        # Select top-k passages
         top_passages = passages[:self.top_k]
-        # Combine the question and top-k passages
-        context = f"QUESTION: {query}\nCONTEXT:\n"
-        context += "\n".join(top_passages)
+
+        # Combine passages with metadata for citation
+        context_passages = []
+        for idx, p in enumerate(top_passages):
+            source = p.get("source", "unknown")
+            chunk_id = p.get("chunk_id", f"chunk_{idx}")
+            text = p["text"].strip()
+            context_passages.append(f"[{chunk_id} | {source}]: {text}")
+
+        # Combine the question and context
+        context = f"<s>[INST] Instruction: Answer the question based on the contexts and explain your reasoning. \nQUESTION: {query}\nCONTEXT:\n"
+        context += "\n\n".join(context_passages)
+        context += "[/INST]"
         return context
 
     def truncate_context(self, text):
@@ -33,9 +42,21 @@ if __name__ == "__main__":
     contextualizer = Contextualizer()
     query = "What are the symptoms of Alzheimer's disease?"
     passages = [
-        "Alzheimer's disease is a progressive neurological disorder.",
-        "Early symptoms include memory loss and confusion.",
-        "Risk factors include age, family history, and genetics."
+        {
+            "text": "Alzheimer's disease is a progressive neurological disorder.",
+            "source": "MedGuide2023",
+            "chunk_id": "chunk_001"
+        },
+        {
+            "text": "Early symptoms include memory loss and confusion.",
+            "source": "MedGuide2023",
+            "chunk_id": "chunk_002"
+        },
+        {
+            "text": "Risk factors include age, family history, and genetics.",
+            "source": "CDC_Report_2022",
+            "chunk_id": "chunk_045"
+        }
     ]
     full_input = contextualizer.build_input(query, passages)
     print(full_input)

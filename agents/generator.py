@@ -3,43 +3,43 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 
 class Generator:
-    def __init__(self, base_model_name="mistralai/Mistral-7B-v0.1", adapter_dir="./saved_models/lora_finetuned", finetuned=True, device="cpu"):
+    def __init__(self, base_model_name, adapter_dir, device="cpu"):
         
         
         # Load the tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=True, device=device)
         
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
         base_model = AutoModelForCausalLM.from_pretrained(base_model_name, trust_remote_code=True)
 
-        if finetuned:
+        if adapter_dir:
             # Load the LoRA adapter weights
             self.model = PeftModel.from_pretrained(base_model, adapter_dir).to(device)
         else:
             # Load the base model without LoRA
-            self.model = AutoModelForCausalLM.from_pretrained(base_model_name, trust_remote_code=True)
+            self.model = base_model.to(device)
 
         self.device = device
 
-    def generate(self, prompt, max_length=512, temperature=0.7, top_p=0.9, top_k=50):
+    def generate(self, prompt, max_new_tokens=1000, do_sample=False):
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+        input_len = inputs["input_ids"].shape[1]
+
         output = self.model.generate(
             **inputs,
-            max_length=max_length,
-            temperature=temperature,
-            top_p=top_p,
-            top_k=top_k,
-            do_sample=True
+            max_new_tokens=max_new_tokens,
+            do_sample=do_sample
         )
-        return self.tokenizer.decode(output[0], skip_special_tokens=True)
+        generated_tokens = output[0][input_len:]
+        return self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
     
 
 
 if __name__ == "__main__":
     # Test the generator
-    generator = Generator(base_model_name="mistralai/Mistral-7B-v0.1", adapter_dir="./saved_models/lora_finetuned/checkpoint-69000")
-    prompt = "QUESTION: What are the symptoms of Alzheimer's disease?\nCONTEXT:\nAlzheimer's disease is a progressive neurological disorder.\nEarly symptoms include memory loss and confusion."
+    generator = Generator(base_model_name="mistralai/Mistral-7B-Instruct-v0.2", adapter_dir=None)
+    prompt = "<s>[INST] Instruction: Answer the question based on the context.\nQUESTION: What are the symptoms of Alzheimer's disease?\nCONTEXT:\nAlzheimer's disease is a progressive neurological disorder.\nEarly symptoms include memory loss and confusion. [/INST]"
     response = generator.generate(prompt)
     print(response)

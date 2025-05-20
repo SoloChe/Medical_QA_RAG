@@ -2,6 +2,8 @@ import json
 import os
 import argparse
 
+#TODO: prompt design for instruct model
+
 def clean_text(text):
     return text.replace("\n", " ").replace("\t", " ").strip()
 
@@ -15,32 +17,24 @@ def process_pubmedqa(input_file, output_file):
         for pmid, sample in data.items():
             # Extract question, long answer, and contexts
             question = sample.get("QUESTION", "").strip()
-            long_answer = sample.get("LONG_ANSWER", "").strip()
             contexts = sample.get("CONTEXTS", [])
+            long_answer = sample.get("LONG_ANSWER", "").strip()
+            short_answer = sample.get("final_decision")
+            
 
             # Process long answer
-            if long_answer:
+            for context in contexts:
+                context = context.strip()
                 entry = {
                     "id": pmid,
-                    "text": long_answer,
-                    "source": "PubMedQA"
+                    "question": question,
+                    "long_answer": long_answer,
+                    "short_answer": short_answer,
                 }
                 outfile.write(json.dumps(entry) + "\n")
                 if len(examples) < 2:
                     examples.append(entry)
 
-            # Process contexts
-            for context in contexts:
-                context = context.strip()
-                if 50 < len(context) < 300:  # Chunk length limits
-                    entry = {
-                        "id": pmid,
-                        "text": context,
-                        "source": "PubMedQA"
-                    }
-                    outfile.write(json.dumps(entry) + "\n")
-                    if len(examples) < 2:
-                        examples.append(entry)
 
     print(f"Processed chunks saved to {output_file}")
     return examples

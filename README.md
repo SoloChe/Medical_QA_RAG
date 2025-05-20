@@ -15,12 +15,14 @@ The current knowledge base is for testing only. The final knowledge base will be
 
 [05/17/2025 update]: Preprocessed textbooks for knowledge base using semantic split with overlap.
 
-[Next]: Working on retrieval part. Exploring the reinforcement learning (PPO) for alignment.
+[05/19/2025 update]: Finished the initial version of Medical QA RAG system. run `./agents/rag_pipeline.py` for demo.
+
+[Next]: Working on retrieval part and will add more agents, e.g., reasoning and tool use. Exploring the reinforcement learning (PPO) for alignment.
 
 ## Agent Pipeline
 1. Retriever Model: FAISS+BioBERT
-2. Contextualizer Model: mistralai/Mistral-7B-v0.1
-3. Fine-tuned Generator Model: mistralai/Mistral-7B-Instruct-v0.2 on [MedMCQA](https://medmcqa.github.io/) dataset
+2. Contextualizer Model: mistralai/Mistral-7B-Instruct-v0.2
+3. Generator Model: mistralai/Mistral-7B-Instruct-v0.2 (optional fine-tuning)
 4. Fact-Checker Model: all-mpnet-base-v2 (optional)
 5. Summarizer Model: facebook/bart-large-cnn (optional)
 
@@ -32,41 +34,5 @@ The system can be deployed on AWS using Docker and SageMaker. The deployment scr
 
 More details will be provided in the near future.
 
-## System Structure
-The system is built using the following components:
 
-```
-medical_qa_rag/
-├── README.md
-├── requirements.txt
-├── data/
-│   ├── raw/                     # Raw downloaded datasets (MedMCQA, PubMedQA, etc.)
-│   ├── processed/               # Preprocessed and tokenized data
-│   ├── medical_docs.txt         # Knowledge base for RAG
-│   └── medical_qa.jsonl         # Fine-tuning data (instruction-response pairs)
-├── saved_models/
-│   ├── lora_finetuned/          # Fine-tuned LLaMA model
-│   └── lora_ppo_finetuned/      # LoRA fine-tuned model
-├── scripts/
-│   ├── preprocess_data.py       # Data preprocessing scripts
-│   ├── train_lora.py            # Fine-tuning script for LoRA
-│   ├── train_lora_ppo.py        # Fine-tuning script for LoRA with PPO
-│   ├── rag_pipeline.py          # RAG pipeline script
-│   ├── preprocess.py            # Preprocessing data for fine-tuning
-│   ├── preprocess_rag.py        # Preprocessing data for RAG
-│   ├── utils.py                 # Utility functions 
-├── agents/
-│   ├── retriever.py             # Dense retrieval agent (DPR, BM25)
-│   ├── contextualizer.py        # Context conditioning agent
-│   ├── generator.py             # Response generation agent
-│   ├── fact_checker.py          # Fact-checking agent (optional)
-│   └── summarizer.py            # Summarization agent (optional)
-├── configs/
-│   ├── train_lora_hf.sh         # Model configuration file
-│   └── train_lora_ppo_hf.sh     # Training configuration file
-├── deployment/
-│   ├── Dockerfile               # Dockerfiles for AWS deployment 
-│   └── pipeline/                # SageMaker pipeline scripts and configuration
-└── notebooks/
-    └── demo.ipynb               # Jupyter notebook for demo
-```
+
