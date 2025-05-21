@@ -9,42 +9,43 @@ from sklearn.metrics import accuracy_score, f1_score, recall_score, confusion_ma
 from datasets import load_dataset
 import time
 import logging 
+import json
+import re
+import textwrap
 
-def normalize_prediction_yesno(pred):
-    pred = pred.lower()
-    if "yes" in pred:
-        return "yes"
-    elif "no" in pred:
-        return "no"
-    else:
-        return "unknown"
+
+def jason_str_2_dict(llm_output):
+    # 1. Remove leading indentation (if any)
+    cleaned = textwrap.dedent(llm_output).strip()
+    # 2. Replace real line breaks inside string values with \n
+    # Only do this between quotes (inside string values)
+    in_str = False
+    result = []
+    for i, c in enumerate(cleaned):
+        if c == '"':
+            in_str = not in_str
+        if c == '\n' and in_str:
+            result.append('\\n')
+        else:
+            result.append(c)
+
+    cleaned_json = ''.join(result)
+
+    # 3. Now parse
+    return json.loads(cleaned_json)
     
-def normalize_prediction_abcde(pred):
-    pred = pred.lower()
-    if "a" in pred:
-        return "A"
-    elif "b" in pred:
-        return "B"
-    elif "c" in pred:
-        return "C"
-    elif "d" in pred:
-        return "D"
-    elif "e" in pred:
-        return "E"
-    else:
-        return "unknown"
-
-def load_pipeline(RAG=True, choice=False, multi_choice=False, device="cpu"):
+def load_pipeline(RAG=True, device="cpu"):
     if RAG:
-        pipeline = RAGPipeline(top_k_con=5, choice=choice, multi_choice=multi_choice, device=device)
+        pipeline = RAGPipeline(device=device)
     else:
         # TODO: Implement the pipeline without RAG
         pass
     return pipeline
 
-def get_response(pipeline, query, top_k_ret=5, max_new_tokens_gen=1000, do_sample_gen=False):
+def get_response(pipeline, question, options, top_k_ret=5, max_new_tokens_gen=1000, do_sample_gen=False):
     # from top_k_ret embeddings select the most relevant top_k_con
-    response = pipeline.run(query, 
+    response = pipeline.run(question,
+                            options,
                             top_k_ret=top_k_ret, 
                             max_new_tokens_gen=max_new_tokens_gen, 
                             do_sample_gen=do_sample_gen,
@@ -52,24 +53,6 @@ def get_response(pipeline, query, top_k_ret=5, max_new_tokens_gen=1000, do_sampl
                             fact_check=False)
     return response
 
-def evaluate(y_true, y_pred):
-    """Calculate accuracy, F1, recall (sensitivity), and specificity."""
-    accuracy = accuracy_score(y_true, y_pred)
-    f1 = f1_score(y_true, y_pred, pos_label="yes", average="binary")
-    recall = recall_score(y_true, y_pred, pos_label="yes", average="binary")  # Sensitivity
-
-    try:
-        tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=["no", "yes"]).ravel()
-        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
-    except ValueError:
-        specificity = 0.0
-
-    return {
-        "accuracy": accuracy,
-        "f1_score": f1,
-        "recall": recall,
-        "specificity": specificity
-    }
 
 def main(args):
     cur_time = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
@@ -90,44 +73,38 @@ def main(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger.info(f"Using device: {device}")
     
-    # Load the RAG pipeline
-    if args.eval_name == 'PubMedQA':
-        choice = True
-        multi_choice = False
-        normalize_prediction = normalize_prediction_yesno
-    elif args.eval_name == 'MedMCQA' or args.eval_name == 'MedQA':
-        choice = False
-        multi_choice = True
-        normalize_prediction = normalize_prediction_abcde
     
-    rag = load_pipeline(RAG=True, choice=choice, multi_choice=multi_choice, device=device)
+    rag = load_pipeline(RAG=True, device=device)
     eval_dataset = load_dataset("json", data_files=args.eval_file, split='train')
     
     logger.info("Running evaluation...")
     predictions = []
     references = []
+    count = 0
     for sample in eval_dataset:
        
-        question = sample.get("query") 
-        # answer = sample.get("short_answer") # For PubMedQA
-        answer = sample.get("answer_idx")  # For and MedQA
+        question = sample.get("question")
+        options = sample.get("options")
+        answer = sample.get("answer_idx") 
 
-        pred_raw = get_response(rag, question)
-        pred_label = normalize_prediction(pred_raw)
-        predictions.append(pred_label)
-        references.append(answer.strip().lower())
-
+        pred_raw = get_response(rag, question, options)
         logger.info(f"Question: {question}")
         logger.info(f"Generated: {pred_raw}")
+        
+        pred_label= jason_str_2_dict(pred_raw).get("answer_choice", "unknown")
+        
         logger.info(f"Answer: {answer}, Prediction: {pred_label}")
         logger.info("=" * 50)
+    
+        predictions.append(pred_label)
+        references.append(answer)
         
-    logger.info(f"Evaluated {len(predictions)} samples.")
-    metrics = evaluate(references, predictions)
-
-    logger.info("Evaluation Metrics:")
-    for key, val in metrics.items():
-        logger.info(f"{key}: {val:.4f}")
+        count += 1
+        
+        if count % 10 == 0:
+            logger.info(f"Evaluated {len(predictions)} samples.")
+            acc = accuracy_score(references, predictions)
+            logger.info(f"Accuracy: {acc:.4f}")
     
 
 if __name__ == "__main__":

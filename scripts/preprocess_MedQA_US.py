@@ -13,19 +13,14 @@ def process_pubmedqa(input_file, output_file):
         for line in infile:
             sample = json.loads(line.strip()) 
           
-
-      
             # Extract question, long answer, and contexts
             question = sample.get("question").strip()
             options = sample.get("options")
             options = f"A: {options.get('A')}, B: {options.get('B')}, C: {options.get('C')}, D: {options.get('D')}, E: {options.get('E')}"
             answer_idx = sample.get("answer_idx")
             
-            question_options = question + "\nOptions:\n" + options
-            # print(question_options)
            
             entry = {
-                "query": question_options,
                 "question": question,
                 "options": options,
                 "answer_idx": answer_idx,

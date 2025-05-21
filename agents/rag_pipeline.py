@@ -14,24 +14,22 @@ class RAGPipeline:
                  generator_model_dir=None,
                  fact_checker_model="all-mpnet-base-v2",
                  summarizer_model="facebook/bart-large-cnn",
-                 top_k_con=5,
-                 choice=False,
-                 multi_choice=False,
                  device="cpu"):
         
         self.retriever = FAISSRetriever(docs_path=retriever_path, index_path=retriever_index_path, device=device)
-        self.contextualizer = Contextualizer(model_name=context_model_name, top_k=top_k_con, choice=choice, multi_choice=multi_choice, device=device)
+        self.contextualizer = Contextualizer(model_name=context_model_name, device=device)
         self.generator = Generator(base_model_name=generator_model_name, adapter_dir=generator_model_dir, device=device)
         self.fact_checker = FactChecker(model_name=fact_checker_model, device=device)
         self.summarizer = Summarizer(model_name=summarizer_model, device=device)
 
-    def run(self, query, top_k_ret=10, max_new_tokens_gen=1000, do_sample_gen=False, summarize=True, fact_check=True):
+    def run(self, question, options=None, top_k_ret=5,
+            max_new_tokens_gen=1000, do_sample_gen=False, summarize=True, fact_check=True):
         # Retrieve top-k passages
-        retrieved_docs = [doc for doc in self.retriever.retrieve(query, top_k=top_k_ret)]
+        retrieved_docs = [doc for doc in self.retriever.retrieve(question, top_k=top_k_ret)]
         # print(f"\n[INFO] Retrieved {len(retrieved_docs)} documents")
         
         # Contextualize the input
-        context_input = self.contextualizer.build_input(query, retrieved_docs)
+        context_input = self.contextualizer.build_input(question, retrieved_docs, options, top_k=top_k_ret)
         # print(f"\n[INFO] Contextualized Input:\n{context_input}...")
         
         # Generate the response
@@ -57,7 +55,14 @@ class RAGPipeline:
         return response
 
 if __name__ == "__main__":
-    rag_pipeline = RAGPipeline()
-    query = "What are the symptoms of Alzheimer's disease?"
-    final_response = rag_pipeline.run(query)
-    # print("\nFinal Response:", final_response)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    rag_pipeline = RAGPipeline(device=device)
+    question = "What are the symptoms of Alzheimer's disease?"
+    options = "A: Memory loss, B: Confusion, C: Both A and B, D: None of the above"
+    final_response = rag_pipeline.run(question, options, top_k_ret=5, fact_check=False, summarize=False)
+    print("\nFinal Response:", final_response)
+    
+    import json
+    response = json.loads(final_response)
+    Final_Choice = response.get("answer_choice", "unknown")
+    print("\nFinal Choice:", Final_Choice)
