@@ -14,25 +14,13 @@ import re
 import textwrap
 
 
-def jason_str_2_dict(llm_output):
-    # 1. Remove leading indentation (if any)
-    cleaned = textwrap.dedent(llm_output).strip()
-    # 2. Replace real line breaks inside string values with \n
-    # Only do this between quotes (inside string values)
-    in_str = False
-    result = []
-    for i, c in enumerate(cleaned):
-        if c == '"':
-            in_str = not in_str
-        if c == '\n' and in_str:
-            result.append('\\n')
-        else:
-            result.append(c)
-
-    cleaned_json = ''.join(result)
-
-    # 3. Now parse
-    return json.loads(cleaned_json)
+def extract_prediction(llm_output):
+    match = re.search(r'"answer_choice"\s*:\s*"([^"]+)"', llm_output)
+    if match:
+        answer = match.group(1)
+        return answer[0]
+    else:
+        return "unknown"
     
 def load_pipeline(RAG=True, device="cpu"):
     if RAG:
@@ -80,8 +68,8 @@ def main(args):
     logger.info("Running evaluation...")
     predictions = []
     references = []
-    count = 0
-    for sample in eval_dataset:
+   
+    for count, sample in enumerate(eval_dataset):
        
         question = sample.get("question")
         options = sample.get("options")
@@ -91,7 +79,7 @@ def main(args):
         logger.info(f"Question: {question}")
         logger.info(f"Generated: {pred_raw}")
         
-        pred_label= jason_str_2_dict(pred_raw).get("answer_choice", "unknown")
+        pred_label = extract_prediction(pred_raw)
         
         logger.info(f"Answer: {answer}, Prediction: {pred_label}")
         logger.info("=" * 50)
@@ -99,12 +87,15 @@ def main(args):
         predictions.append(pred_label)
         references.append(answer)
         
-        count += 1
-        
-        if count % 10 == 0:
+        if (count+1) % 10 == 0:
+            logger.info(f"+" * 50)
             logger.info(f"Evaluated {len(predictions)} samples.")
             acc = accuracy_score(references, predictions)
             logger.info(f"Accuracy: {acc:.4f}")
+            logger.info(f"+" * 50)
+    
+    Final_acc = accuracy_score(references, predictions)
+    logger.info(f"Final Accuracy: {Final_acc:.4f}")
     
 
 if __name__ == "__main__":
