@@ -8,8 +8,6 @@ def clean_text(text):
     return text.replace("\n", " ").replace("\t", " ").strip()
 
 def process_pubmedqa(input_file, output_file):
-    examples = []
-
     # Process the nested JSON structure
     with open(input_file, "r") as infile, open(output_file, "w") as outfile:
         data = json.load(infile)
@@ -21,23 +19,22 @@ def process_pubmedqa(input_file, output_file):
             long_answer = sample.get("LONG_ANSWER", "").strip()
             short_answer = sample.get("final_decision")
             
-
             # Process long answer
-            for context in contexts:
-                context = context.strip()
-                entry = {
-                    "id": pmid,
-                    "question": question,
-                    "long_answer": long_answer,
-                    "short_answer": short_answer,
-                }
-                outfile.write(json.dumps(entry) + "\n")
-                if len(examples) < 2:
-                    examples.append(entry)
+            # join all contexts into a single string
+            contexts = "\n".join(contexts)
+            contexts = contexts.strip()
+            entry = {
+                "id": pmid,
+                "question": question,
+                "contexts": contexts,
+                "long_answer": long_answer,
+                "short_answer": short_answer,
+            }
+            outfile.write(json.dumps(entry) + "\n")
 
 
     print(f"Processed chunks saved to {output_file}")
-    return examples
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process PubMedQA data")
@@ -50,9 +47,6 @@ if __name__ == "__main__":
     os.makedirs(os.path.dirname(args.output_dir), exist_ok=True)
 
     # Run the processing function
-    examples = process_pubmedqa(args.input_dir, args.output_dir)
+    process_pubmedqa(args.input_dir, args.output_dir)
 
-    # Print some examples for verification
-    print("Sample Processed Entries:")
-    for example in examples:
-        print(json.dumps(example, indent=2))
+   

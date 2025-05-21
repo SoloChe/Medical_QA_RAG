@@ -101,7 +101,8 @@ def train_lora(args):
     train_dataset = train_dataset.map(lambda examples: preprocess_function(examples, tokenizer), batched=True, 
                                       remove_columns=train_dataset.column_names)
     
-    val_dataset = load_dataset("json", data_files=args.val_file, split='train')
+    val_dataset = load_dataset("json", data_files=args.val_file, split='validation')
+    # Preprocess the validation dataset')
     val_dataset = val_dataset.map(lambda examples: preprocess_function(examples, tokenizer), batched=True)
     # select only the first 100 examples for validation
     val_dataset = val_dataset.select(range(100))

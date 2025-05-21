@@ -15,7 +15,9 @@ The current knowledge base is for testing only. The final knowledge base will be
 
 [05/17/2025 update]: Preprocessed textbooks for knowledge base using semantic split with overlap.
 
-[05/19/2025 update]: Finished the initial version of Medical QA RAG system. run `./agents/rag_pipeline.py` for demo.
+[05/19/2025 update]: Finished the initial version of Medical QA RAG system. run `demo.py` for demo.
+
+[05/19/2025 update]: Finished the evaluation pipeline for RAG system.
 
 [Next]: Working on retrieval part and will add more agents, e.g., reasoning and tool use. Exploring the reinforcement learning (PPO) for alignment.
 

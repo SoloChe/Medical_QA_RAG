@@ -1,10 +1,12 @@
 from transformers import AutoTokenizer
 
 class Contextualizer:
-    def __init__(self, model_name="mistralai/Mistral-7B-Instruct-v0.2", max_length=1024, top_k=3, device='cpu'):
+    def __init__(self, model_name="mistralai/Mistral-7B-Instruct-v0.2", max_length=2000, top_k=3, choice=False, multi_choice=False, device='cpu'):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device=device)
         self.max_length = max_length
         self.top_k = top_k
+        self.choice = choice
+        self.multi_choice = multi_choice
 
     def format_context(self, query, passages):
         # Select top-k passages
@@ -19,9 +21,18 @@ class Contextualizer:
             context_passages.append(f"[{chunk_id} | {source}]: {text}")
 
         # Combine the question and context
-        context = f"<s>[INST] Instruction: Answer the question based on the contexts and explain your reasoning. \nQUESTION: {query}\nCONTEXT:\n"
-        context += "\n\n".join(context_passages)
-        context += "[/INST]"
+        if not self.choice and not self.multi_choice:
+            context = f"<s>[INST] Instruction: Answer the question based on the given contexts and explain your reasoning. \nQUESTION: {query}\nCONTEXT:\n"
+            context += "\n\n".join(context_passages)
+            context += "[/INST]"
+        elif self.choice:
+            context = f"<s>[INST] Instruction: Answer the question based on the given contexts. Output 'yes' or 'no' only. \nQUESTION: {query}\nCONTEXT:\n"
+            context += "\n\n".join(context_passages)
+            context += "[/INST]"
+        elif self.multi_choice:
+            context = f"<s>[INST] Instruction: Answer the question based on the given contexts and options. Output answer index only. \nQUESTION: {query}\nCONTEXT:\n"
+            context += "\n\n".join(context_passages)
+            context += "[/INST]"
         return context
 
     def truncate_context(self, text):

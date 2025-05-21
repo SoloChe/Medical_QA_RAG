@@ -18,14 +18,10 @@ class FAISSRetriever:
 
         # Check for GPU availability
         self.device = device
-        print(f"Using device: {self.device}")
-
         # Load model
         self.model = SentenceTransformer(model_name, device=self.device)
-        
         # Load documents
         self.documents = self._load_documents()
-        
         # Load or build index
         if not os.path.exists(index_path):
             print("No FAISS index found. Building a new one...")
