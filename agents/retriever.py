@@ -3,7 +3,6 @@ import glob
 import json
 import numpy as np
 import faiss
-import torch
 from sentence_transformers import SentenceTransformer
 
 class FAISSRetriever:
