@@ -19,7 +19,7 @@ The current knowledge base is for testing only. The final knowledge base will be
 
 [05/19/2025 update]: Finished the evaluation pipeline for RAG system.
 
-[Next]: Working on retrieval part and will add more agents, e.g., reasoning and tool use. Exploring the reinforcement learning (PPO) for alignment.
+[Next]: Working on ranking in retrieval part. Will add ReAct and tool use in the future. 
 
 ## Agent Pipeline
 1. Retriever Model: FAISS+BioBERT
