@@ -3,7 +3,25 @@ import glob
 import json
 import numpy as np
 import faiss
+import torch
 from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+#TODO: Add the ranker class
+class Ranker:
+    def __init__(self, device):
+        self.device = device
+        model_name = "gsarti/biobert-nli"  # or use a biomedical reranker
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
+       
+    def rank(self, query, docs):
+        pairs = [f"{query} [SEP] {doc['text']}" for doc in docs]
+        inputs = self.tokenizer(pairs, padding=True, max_length=512, truncation=True, return_tensors="pt").to(self.device)
+        with torch.no_grad():
+            scores = self.model(**inputs).logits
+        return scores.cpu().tolist()
+        
 
 class FAISSRetriever:
     def __init__(self, docs_path="./data/KB_books", 
@@ -11,16 +29,16 @@ class FAISSRetriever:
                  model_name="pritamdeka/BioBERT-mnli-snli-scinli-scitail-mednli-stsb",
                  batch_size=32,
                  device='cpu'):
+        
         self.docs_path = docs_path
         self.index_path = index_path
         self.batch_size = batch_size
 
-        # Check for GPU availability
         self.device = device
-        # Load model
         self.model = SentenceTransformer(model_name, device=self.device)
-        # Load documents
         self.documents = self._load_documents()
+        self.ranker = Ranker(device)
+        
         # Load or build index
         if not os.path.exists(index_path):
             print("No FAISS index found. Building a new one...")
@@ -30,6 +48,7 @@ class FAISSRetriever:
             self.index = faiss.read_index(index_path)
             if self.device == "cuda":
                 self._move_index_to_gpu()
+        
 
     def _load_documents(self):
         if not os.path.exists(self.docs_path):
@@ -95,7 +114,6 @@ class FAISSRetriever:
     def retrieve(self, query, top_k=5):
         # Encode the query
         query_embedding = self.model.encode([query], show_progress_bar=False)
-
         # Perform the search
         D, I = self.index.search(query_embedding, top_k)
         
@@ -109,17 +127,24 @@ class FAISSRetriever:
             }
             for j, i in enumerate(I[0])
         ]
-        return results
+        # Rank the results
+        ranked_scores = self.ranker.rank(query, results)
+        for i, score in enumerate(ranked_scores):
+            results[i]["ranked_score"] = score
+        
+        ranked_results = sorted(results, key=lambda x: x["ranked_score"][1], reverse=True)
+        return ranked_results
 
 
 if __name__ == "__main__":
     retriever = FAISSRetriever()
     query = "What are the symptoms of Alzheimer's disease?"
     results = retriever.retrieve(query, top_k=3)
-    for result in results:
-        score = result["score"]
-        doc = result["text"]
-        source = result["source"]
-        chunk_id = result["chunk_id"]
-        print(f"\nChunk_id: {chunk_id}, Source: {source}, Score: {score:.4f}\nDocument: {doc[:500]}...\n")
+    print(results)
+    # for result in results:
+    #     score = result["score"]
+    #     doc = result["text"]
+    #     source = result["source"]
+    #     chunk_id = result["chunk_id"]
+    #     print(f"\nChunk_id: {chunk_id}, Source: {source}, Score: {score:.4f}\nDocument: {doc[:500]}...\n")
 

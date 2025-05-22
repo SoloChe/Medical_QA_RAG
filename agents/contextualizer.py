@@ -41,7 +41,7 @@ class Contextualizer:
         general_medrag_system = '''You are a helpful medical expert, and your task is to answer a binary-choice or multi-choice medical question using the relevant documents. Please first think step-by-step and then choose the answer from the provided options. Organize your output in a json formatted as Dict{"step_by_step_thinking": Str(explanation), "answer_choice": Str{A/B/C/...}}. Your responses will be used for research purposes only, so please have a definite answer. If you are not sure, please fill the "answer_choice" with "Unknown".'''
         
         general_medrag = Template('''
-        Here are the relevant documents:
+        Here are the relevant documents (most relevant first):
         {{context}}
 
         Here is the question:
