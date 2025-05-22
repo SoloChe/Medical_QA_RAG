@@ -17,16 +17,19 @@ The current knowledge base is for testing only. The final knowledge base will be
 
 [05/19/2025 update]: Finished the RAG pipeline v2. run `demo.py` for demo.
 
-[05/19/2025 update]: Finished the evaluation script for the RAG pipeline v2. The current acc. on MedQA is 0.39. 
+[05/20/2025 update]: Finished the evaluation script for the RAG pipeline v2. The current acc. on MedQA is 0.39. 
 
-[Next]: Working on ranking in retrieval part. Will add ReAct and tool use in the future. 
+[05/20/2025 update]: Finished `ranker` to re-rank the retrieved docs.
+
+
+[Next]: Working on self-correct loop. Will add ReAct and tool use in the future. 
 
 ## Agent Pipeline
-1. Retriever Model: FAISS+BioBERT (will add re-ranking)
-2. Contextualizer Model: mistralai/Mistral-7B-Instruct-v0.2
-3. Generator Model: mistralai/Mistral-7B-Instruct-v0.2 (optional fine-tuning and PPO alignment available)
-4. Fact-Checker Model: all-mpnet-base-v2 (optional)
-5. Summarizer Model: facebook/bart-large-cnn (optional)
+1. Retriever Model: FAISS+BioBERT+Ranker
+2. Contextualizer: LLM Prompt 
+3. Generator Model (LLM): `mistralai/Mistral-7B-Instruct-v0.2` (optional fine-tuning and PPO alignment available)
+4. Fact-Checker Model: (optional)
+5. Summarizer Model: (optional)
 
 ## Fine-tuning
 The generator model is fine-tuned using LoRa and PPO for alignment. The configuration files for both methods are provided in the `configs` directory. The fine-tuning process is performed using the Hugging Face Trainer API (LoRa) and customized training loops (LoRa+PPO) on HPC (Slurm job schedular) with Nvidia-A100@80GB. The training scripts are located in the `scripts` directory. The fine-tuned models are saved in the `saved_models` directory (not uploaded).

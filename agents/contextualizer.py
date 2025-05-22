@@ -2,7 +2,7 @@ from transformers import AutoTokenizer
 from liquid import Template
 
 class Contextualizer:
-    def __init__(self, model_name="mistralai/Mistral-7B-Instruct-v0.2", max_length=3000, top_k=3, device='cpu'):
+    def __init__(self, model_name="mistralai/Mistral-7B-Instruct-v0.2", max_length=2000, device='cpu'):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device=device)
         self.max_length = max_length
     
@@ -72,7 +72,7 @@ class Contextualizer:
                     {"role": "user", "content": prompt_medrag}
             ]
         else:
-            prompt_medrag = general_medrag_free.render(context=context, question=question)
+            prompt_medrag_free = general_medrag_free.render(context=context, question=question)
             messages=[
                     {"role": "system", "content": general_medrag_system_free},
                     {"role": "user", "content": prompt_medrag_free}
