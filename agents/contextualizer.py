@@ -1,8 +1,8 @@
 from transformers import AutoTokenizer
-from liquid import Template
+from .template import *
 
 class Contextualizer:
-    def __init__(self, model_name="mistralai/Mistral-7B-Instruct-v0.2", max_length=2000, device='cpu'):
+    def __init__(self, model_name="mistralai/Mistral-7B-Instruct-v0.2", max_length=4000, device='cpu'):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device=device)
         self.max_length = max_length
     
@@ -37,34 +37,7 @@ class Contextualizer:
         return self.truncate_context(full_prompt)
     
     def prepare_prompt(self, question, context, options, free=False):
-        # from https://github.com/SoloChe/MedRAG/blob/main/src/template.py
-        general_medrag_system = '''You are a helpful medical expert, and your task is to answer a binary-choice or multi-choice medical question using the relevant documents. Please first think step-by-step and then choose the answer from the provided options. Organize your output in a json formatted as Dict{"step_by_step_thinking": Str(explanation), "answer_choice": Str{A/B/C/...}}. Your responses will be used for research purposes only, so please have a definite answer. If you are not sure, please fill the "answer_choice" with "Unknown".'''
-        
-        general_medrag = Template('''
-        Here are the relevant documents (most relevant first):
-        {{context}}
-
-        Here is the question:
-        {{question}}
-
-        Here are the potential choices:
-        {{options}}
-
-        Please think step-by-step and generate your output in json:
-        ''')
-        
-        general_medrag_system_free = '''You are a helpful medical expert, and your task is to answer medical question using the relevant documents. Please first think step-by-step and then answer the question. Organize your output in a json formatted as Dict{"step_by_step_thinking": Str(explanation), "answer": Str{}}.'''
-        
-        general_medrag_free = Template('''
-        Here are the relevant documents:
-        {{context}}
-
-        Here is the question:
-        {{question}}
-
-        Please think step-by-step and generate your output in json:
-        ''')
-        
+       
         if not free:
             prompt_medrag = general_medrag.render(context=context, question=question, options=options)
             messages=[

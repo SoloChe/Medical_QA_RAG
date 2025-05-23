@@ -17,12 +17,11 @@ The current knowledge base is for testing only. The final knowledge base will be
 
 [05/19/2025 update]: Finished the RAG pipeline v2. run `demo.py` for demo.
 
-[05/20/2025 update]: Finished the evaluation script for the RAG pipeline v2. The current acc. on MedQA is 0.39. 
+[05/20/2025 update]: Finished the evaluation script for the RAG pipeline v2. The current acc. on MedQA is 0.39 (corpus: textbooks, LLM: `mistralai/Mistral-7B-Instruct-v0.2`)
 
-[05/20/2025 update]: Finished `ranker` to re-rank the retrieved docs.
+[05/22/2025 update]: Finished `ranker` and `problem parser` for retriever. 
 
-
-[Next]: Working on self-correct loop. Will add ReAct and tool use in the future. 
+[Next]: Working on question decomposition and self-correct loop. Will add ReAct and tool use in the future. 
 
 ## Agent Pipeline
 1. Retriever Model: FAISS+BioBERT+Ranker

@@ -5,24 +5,76 @@ import numpy as np
 import faiss
 import torch
 from sentence_transformers import SentenceTransformer
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM
+from .template import *
+import json
 
-#TODO: Add the ranker class
 class Ranker:
     def __init__(self, device):
         self.device = device
         model_name = "gsarti/biobert-nli"  # or use a biomedical reranker
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
+        self.model.eval()
        
     def rank(self, query, docs):
         pairs = [f"{query} [SEP] {doc['text']}" for doc in docs]
         inputs = self.tokenizer(pairs, padding=True, max_length=512, truncation=True, return_tensors="pt").to(self.device)
         with torch.no_grad():
+            self.model.eval()
             scores = self.model(**inputs).logits
         return scores.cpu().tolist()
         
+class Parser:
+    def __init__(self, model_name="mistralai/Mistral-7B-Instruct-v0.2", device='cpu'):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.tokenizer.pad_token = self.tokenizer.eos_token 
+        self.model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        self.model.eval()
+        self.device = device
+    
+    def get_prompt(self, question):
+        question_parse_prompt = question_parse.render(question=question)    
+        messages=[
+                {"role": "system", "content": question_parse_system},
+                {"role": "user", "content": question_parse_prompt}
+        ]
+        return messages
+    
+    def string_to_list(self, string):
+        sub_questions = json.loads(string)
+        return sub_questions["sub_questions"]
+        
+    
+    def question_parse(self, question):
+        
+        # Generate the prompt using the chat template
+        formatted_prompt = self.tokenizer.apply_chat_template(
+            self.get_prompt(question), 
+            tokenize=False, 
+            add_generation_prompt=True
+        )
 
+        # Tokenize the formatted prompt
+        inputs = self.tokenizer(
+            formatted_prompt, 
+            return_tensors="pt", 
+            padding=True, 
+            truncation=True, 
+            max_length=1000  # Ensure it respects the model's max length
+        ).to(self.model.device)
+        
+        input_len = inputs["input_ids"].shape[1]
+
+        # Generate the output
+        with torch.no_grad(): 
+            outputs = self.model.generate(**inputs, max_new_tokens=1000, do_sample=False, 
+                                          pad_token_id=self.tokenizer.eos_token_id)
+
+        # Decode the generated output
+        decoded_output = self.tokenizer.decode(outputs[0][input_len:], skip_special_tokens=True)
+        return self.string_to_list(decoded_output)
+    
 class FAISSRetriever:
     def __init__(self, docs_path="./data/KB_books", 
                  index_path="./data/KB_books/books_index.faiss", 
@@ -36,6 +88,7 @@ class FAISSRetriever:
 
         self.device = device
         self.model = SentenceTransformer(model_name, device=self.device)
+        self.model.eval()
         self.documents = self._load_documents()
         self.ranker = Ranker(device)
         
@@ -137,10 +190,15 @@ class FAISSRetriever:
 
 
 if __name__ == "__main__":
-    retriever = FAISSRetriever()
+    device="cuda" if torch.cuda.is_available() else "cpu"
     query = "What are the symptoms of Alzheimer's disease?"
-    results = retriever.retrieve(query, top_k=3)
-    print(results)
+    parser = Parser(device=device)
+    parsed_query = parser.question_parse(query)
+    # retriever = FAISSRetriever(device=device)
+    print(f"Parsed Query: {parsed_query}")
+    
+    # results = retriever.retrieve(query, top_k=3)
+    # print(results)
     # for result in results:
     #     score = result["score"]
     #     doc = result["text"]

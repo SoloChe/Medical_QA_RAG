@@ -36,9 +36,7 @@ def get_response(pipeline, question, options, top_k_ret=5, max_new_tokens_gen=10
                             options,
                             top_k_ret=top_k_ret, 
                             max_new_tokens_gen=max_new_tokens_gen, 
-                            do_sample_gen=do_sample_gen,
-                            summarize=False, 
-                            fact_check=False)
+                            do_sample_gen=do_sample_gen)
     return response
 
 
@@ -68,7 +66,7 @@ def main(args):
     logger.info("Running evaluation...")
     predictions = []
     references = []
-   
+    count_unknown = 0
     for count, sample in enumerate(eval_dataset):
        
         question = sample.get("question")
@@ -77,9 +75,11 @@ def main(args):
 
         pred_raw = get_response(rag, question, options)
         logger.info(f"Question: {question}")
+        logger.info(f"Options: {options}")
         logger.info(f"Generated: {pred_raw}")
         
         pred_label = extract_prediction(pred_raw)
+        if pred_label == "U": count_unknown += 1
         
         logger.info(f"Answer: {answer}, Prediction: {pred_label}")
         logger.info("=" * 50)
@@ -90,12 +90,14 @@ def main(args):
         if (count+1) % 10 == 0:
             logger.info(f"+" * 50)
             logger.info(f"Evaluated {len(predictions)} samples.")
+            logger.info(f"Count Unknown: {count_unknown}")
             acc = accuracy_score(references, predictions)
             logger.info(f"Accuracy: {acc:.4f}")
             logger.info(f"+" * 50)
     
     Final_acc = accuracy_score(references, predictions)
     logger.info(f"Final Accuracy: {Final_acc:.4f}")
+    logger.info(f"Count Unknown: {count_unknown}")
     
 
 if __name__ == "__main__":

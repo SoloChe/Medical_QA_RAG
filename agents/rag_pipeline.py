@@ -12,18 +12,21 @@ class RAGPipeline:
                  context_model_name="mistralai/Mistral-7B-Instruct-v0.2",
                  generator_model_name="mistralai/Mistral-7B-Instruct-v0.2",
                  generator_model_dir=None,
-                 fact_checker_model="all-mpnet-base-v2",
-                 summarizer_model="facebook/bart-large-cnn",
+                 fact_checker_model=None, # "all-mpnet-base-v2",
+                 summarizer_model=None, # "facebook/bart-large-cnn",
                  device="cpu"):
         
         self.retriever = FAISSRetriever(docs_path=retriever_path, index_path=retriever_index_path, device=device)
         self.contextualizer = Contextualizer(model_name=context_model_name, device=device)
         self.generator = Generator(base_model_name=generator_model_name, adapter_dir=generator_model_dir, device=device)
-        self.fact_checker = FactChecker(model_name=fact_checker_model, device=device)
-        self.summarizer = Summarizer(model_name=summarizer_model, device=device)
+        
+        self.fact_checker = FactChecker(model_name=fact_checker_model, device=device) if fact_checker_model else None
+        self.summarizer = Summarizer(model_name=summarizer_model, device=device) if summarizer_model else None
+            
+        
 
     def run(self, question, options=None, top_k_ret=5,
-            max_new_tokens_gen=1000, do_sample_gen=False, summarize=True, fact_check=True):
+            max_new_tokens_gen=1000, do_sample_gen=False):
         # Retrieve top-k passages
         retrieved_docs = [doc for doc in self.retriever.retrieve(question, top_k=top_k_ret)]
         # print(f"\n[INFO] Retrieved {len(retrieved_docs)} documents")
@@ -39,7 +42,7 @@ class RAGPipeline:
         # print(f"\n[INFO] Generated Response:\n{response}")
         
         # Fact check the response
-        if fact_check:
+        if self.fact_checker:
             is_factually_correct, top_matches = self.fact_checker.check_fact(response, retrieved_docs)
             print(f"\n[INFO] Fact Check: {'PASS' if is_factually_correct else 'FAIL'}")
             if not is_factually_correct:
@@ -48,7 +51,7 @@ class RAGPipeline:
                     print(f"Score: {score:.4f} | Context: {context}")
         
         # Summarize the response (optional)
-        if summarize:
+        if self.summarizer:
             response = self.summarizer.summarize(response)
             print(f"\n[INFO] Summarized Response: {response}")
         
