@@ -2,11 +2,11 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 
 class Summarizer:
-    def __init__(self, model_name="facebook/bart-large-cnn", device="cpu", max_length=200):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(device)
+    def __init__(self, model, tokenizer, max_length=1000):
+        self.tokenizer = tokenizer
+        self.model = model
         self.max_length = max_length
-        self.device = device
+        self.device = model.device
 
     def summarize(self, text, max_length=None, min_length=30, do_sample=False, temperature=0.7):
         # Ensure max_length is set

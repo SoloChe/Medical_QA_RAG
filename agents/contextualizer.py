@@ -2,24 +2,10 @@ from transformers import AutoTokenizer
 from .template import *
 
 class Contextualizer:
-    def __init__(self, model_name="mistralai/Mistral-7B-Instruct-v0.2", max_length=4000, device='cpu'):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True, device=device)
+    def __init__(self, tokenizer, max_length=4000):
         self.max_length = max_length
-    
+        self.tokenizer = tokenizer
 
-    def format_context(self, passages, top_k):
-        # Select top-k passages
-        top_passages = passages[:top_k]
-
-        # Combine passages with metadata for citation
-        context_passages = []
-        for idx, p in enumerate(top_passages):
-            source = p.get("source", "unknown")
-            chunk_id = p.get("chunk_id", f"chunk_{idx}")
-            text = p["text"].strip()
-            context_passages.append(f"[{chunk_id} | {source}]: {text}")
-            context = "\n\n".join(context_passages)
-        return context
     
     def truncate_context(self, text):
         # Tokenize to check length
@@ -31,7 +17,6 @@ class Contextualizer:
 
     def build_input(self, question, context, options=None, top_k=3):
         # Format the full_prompt
-        context = self.format_context(context, top_k)
         full_prompt = self.prepare_prompt(question, context, options, free=(options==None))
         # Truncate if too long
         return self.truncate_context(full_prompt)
@@ -55,25 +40,21 @@ class Contextualizer:
 
 if __name__ == "__main__":
     # Sample usage
-    contextualizer = Contextualizer()
     question = "What are the symptoms of Alzheimer's disease?"
     options = "A: Memory loss, B: Confusion, C: Both A and B, D: None of the above"
-    context = [
-        {
-            "text": "Alzheimer's disease is a progressive neurological disorder.",
-            "source": "MedGuide2023",
-            "chunk_id": "chunk_001"
-        },
-        {
-            "text": "Early symptoms include memory loss and confusion.",
-            "source": "MedGuide2023",
-            "chunk_id": "chunk_002"
-        },
-        {
-            "text": "Risk factors include age, family history, and genetics.",
-            "source": "CDC_Report_2022",
-            "chunk_id": "chunk_045"
-        }
-    ]
+    
+    context = \
+    """
+    [1970 | Psichiatry_DSM-5]: deficit early in the course might suggest Alzheimer's disease...
+
+    [5538 | Neurology_Adams]: both the genetic aspects and therapeutic measures...
+
+    [1973 | Psichiatry_DSM-5]: and progressive worsening of memory...
+    """
+    
+    LLM_name = "mistralai/Mistral-7B-Instruct-v0.2"
+    tokenizer = AutoTokenizer.from_pretrained(LLM_name, trust_remote_code=True)
+    contextualizer = Contextualizer(tokenizer)
+    tokenizer.pad_token = tokenizer.eos_token
     full_input = contextualizer.build_input(question, context, options=options)
     print(full_input)

@@ -85,8 +85,8 @@ class FAISSRetriever:
         self.docs_path = docs_path
         self.index_path = index_path
         self.batch_size = batch_size
-
         self.device = device
+        
         self.model = SentenceTransformer(model_name, device=self.device)
         self.model.eval()
         self.documents = self._load_documents()
@@ -186,7 +186,20 @@ class FAISSRetriever:
             results[i]["ranked_score"] = score
         
         ranked_results = sorted(results, key=lambda x: x["ranked_score"][1], reverse=True)
-        return ranked_results
+        return self.format_context(ranked_results)
+    
+    def format_context(self, passages):
+        # Select top-k passages
+        top_passages = passages
+        # Combine passages with metadata for citation
+        context_passages = []
+        for idx, p in enumerate(top_passages):
+            source = p.get("source", "unknown")
+            chunk_id = p.get("chunk_id", f"chunk_{idx}")
+            text = p["text"].strip()
+            context_passages.append(f"[{chunk_id} | {source}]: {text}")
+            context = "\n\n".join(context_passages)
+        return context
 
 
 if __name__ == "__main__":
@@ -194,11 +207,12 @@ if __name__ == "__main__":
     query = "What are the symptoms of Alzheimer's disease?"
     parser = Parser(device=device)
     parsed_query = parser.question_parse(query)
-    # retriever = FAISSRetriever(device=device)
     print(f"Parsed Query: {parsed_query}")
     
-    # results = retriever.retrieve(query, top_k=3)
-    # print(results)
+    retriever = FAISSRetriever(device=device)
+    results = retriever.retrieve(query, top_k=3)
+    print(results)
+    
     # for result in results:
     #     score = result["score"]
     #     doc = result["text"]

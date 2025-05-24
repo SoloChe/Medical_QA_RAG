@@ -5,13 +5,11 @@ sys.path.append(os.path.join(root_dir, ".."))
 import torch
 import argparse
 from agents.rag_pipeline import RAGPipeline
-from sklearn.metrics import accuracy_score, f1_score, recall_score, confusion_matrix
+from sklearn.metrics import accuracy_score
 from datasets import load_dataset
 import time
 import logging 
-import json
 import re
-import textwrap
 
 
 def extract_prediction(llm_output):
@@ -31,7 +29,6 @@ def load_pipeline(RAG=True, device="cpu"):
     return pipeline
 
 def get_response(pipeline, question, options, top_k_ret=5, max_new_tokens_gen=1000, do_sample_gen=False):
-    # from top_k_ret embeddings select the most relevant top_k_con
     response = pipeline.run(question,
                             options,
                             top_k_ret=top_k_ret, 
@@ -73,11 +70,22 @@ def main(args):
         options = sample.get("options")
         answer = sample.get("answer_idx") 
 
-        pred_raw = get_response(rag, question, options)
+        status, pred_raw, critique, revised_pred_raw = get_response(rag, question, options)
+        
         logger.info(f"Question: {question}")
         logger.info(f"Options: {options}")
-        logger.info(f"Generated: {pred_raw}")
         
+        if revised_pred_raw:
+            logger.info(f"Pass: {status}")
+            logger.info(f"Initial Prediction: {pred_raw}")
+            logger.info(f"Critique: {critique}")
+            logger.info(f"Revised Prediction: {revised_pred_raw}")
+            pred_raw = revised_pred_raw
+        else:
+            logger.info(f"Pass: {status}")
+            logger.info(f"Initial Prediction: {pred_raw}")
+            logger.info(f"Critique: {critique}")
+
         pred_label = extract_prediction(pred_raw)
         if pred_label == "U": count_unknown += 1
         
@@ -88,14 +96,15 @@ def main(args):
         references.append(answer)
         
         if (count+1) % 10 == 0:
-            logger.info(f"+" * 50)
+            logger.info(f"+" * 100)
             logger.info(f"Evaluated {len(predictions)} samples.")
             logger.info(f"Count Unknown: {count_unknown}")
             acc = accuracy_score(references, predictions)
             logger.info(f"Accuracy: {acc:.4f}")
-            logger.info(f"+" * 50)
+            logger.info(f"+" * 100)
     
     Final_acc = accuracy_score(references, predictions)
+    logger.info(f"Number of samples: {len(predictions)}")
     logger.info(f"Final Accuracy: {Final_acc:.4f}")
     logger.info(f"Count Unknown: {count_unknown}")
     

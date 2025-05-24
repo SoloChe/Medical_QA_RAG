@@ -21,7 +21,9 @@ The current knowledge base is for testing only. The final knowledge base will be
 
 [05/22/2025 update]: Finished `ranker` and `problem parser` for retriever. 
 
-[Next]: Working on question decomposition and self-correct loop. Will add ReAct and tool use in the future. 
+[05/23/2025 update]: Finished single-round correction. 
+
+[Next]: Working on multi-round self-correction loop. Will add ReAct and tool use in the future. 
 
 ## Agent Pipeline
 1. Retriever Model: FAISS+BioBERT+Ranker
