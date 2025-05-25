@@ -1,12 +1,11 @@
 from transformers import AutoTokenizer
-from .template import *
+from template import *
 
 class Contextualizer:
     def __init__(self, tokenizer, max_length=4000):
         self.max_length = max_length
         self.tokenizer = tokenizer
-
-    
+        
     def truncate_context(self, text):
         # Tokenize to check length
         text = self.tokenizer.apply_chat_template(text, tokenize=False, add_generation_prompt=True)
@@ -15,7 +14,7 @@ class Contextualizer:
         truncated_text = self.tokenizer.decode(tokens, skip_special_tokens=True)
         return truncated_text
 
-    def build_input(self, question, context, options=None, top_k=3):
+    def build_input(self, question, context, options=None):
         # Format the full_prompt
         full_prompt = self.prepare_prompt(question, context, options, free=(options==None))
         # Truncate if too long

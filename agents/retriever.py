@@ -5,8 +5,9 @@ import numpy as np
 import faiss
 import torch
 from sentence_transformers import SentenceTransformer
+from sentence_transformers.models import Transformer, Pooling
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForCausalLM
-from .template import *
+from template import *
 import json
 
 class Ranker:
@@ -74,12 +75,35 @@ class Parser:
         # Decode the generated output
         decoded_output = self.tokenizer.decode(outputs[0][input_len:], skip_special_tokens=True)
         return self.string_to_list(decoded_output)
-    
+
+class CustomizeSentenceTransformer(SentenceTransformer): # change the default pooling "MEAN" to "CLS"
+
+    def _load_auto_model(self, model_name_or_path, *args, **kwargs):
+        """
+        Creates a simple Transformer + CLS Pooling model and returns the modules
+        """
+        print("No sentence-transformers model found with name {}. Creating a new one with CLS pooling.".format(model_name_or_path))
+        token = kwargs.get('token', None)
+        cache_folder = kwargs.get('cache_folder', None)
+        revision = kwargs.get('revision', None)
+        trust_remote_code = kwargs.get('trust_remote_code', False)
+        if 'token' in kwargs or 'cache_folder' in kwargs or 'revision' in kwargs or 'trust_remote_code' in kwargs:
+            transformer_model = Transformer(
+                model_name_or_path,
+                cache_dir=cache_folder,
+                model_args={"token": token, "trust_remote_code": trust_remote_code, "revision": revision},
+                tokenizer_args={"token": token, "trust_remote_code": trust_remote_code, "revision": revision},
+            )
+        else:
+            transformer_model = Transformer(model_name_or_path)
+        pooling_model = Pooling(transformer_model.get_word_embedding_dimension(), 'cls')
+        return [transformer_model, pooling_model]
 class FAISSRetriever:
-    def __init__(self, docs_path="./data/KB_books", 
-                 index_path="./data/KB_books/books_index.faiss", 
-                 model_name="pritamdeka/BioBERT-mnli-snli-scinli-scitail-mednli-stsb",
-                 batch_size=32,
+    def __init__(self, docs_path="./data/KB_books_v2", 
+                 index_path="./data/KB_books_v2/books_index.faiss", 
+                 model_name="ncbi/MedCPT-Query-Encoder",
+                 batch_size=256,
+                 use_ranker=False,
                  device='cpu'):
         
         self.docs_path = docs_path
@@ -87,10 +111,12 @@ class FAISSRetriever:
         self.batch_size = batch_size
         self.device = device
         
-        self.model = SentenceTransformer(model_name, device=self.device)
-        self.model.eval()
+        # self.model = SentenceTransformer(model_name, device=self.device)
+        self.query_model = CustomizeSentenceTransformer(model_name, device=self.device)
+        self.query_model.eval()
         self.documents = self._load_documents()
-        self.ranker = Ranker(device)
+        
+        self.ranker = Ranker(device) if use_ranker else None
         
         # Load or build index
         if not os.path.exists(index_path):
@@ -131,18 +157,23 @@ class FAISSRetriever:
 
     def _build_index(self):
         # Generate embeddings in batches
+        self.doc_model = CustomizeSentenceTransformer("ncbi/MedCPT-Article-Encoder", device=self.device)
+        self.doc_model.eval()
         print("Generating embeddings...")
         embeddings = []
         for i in range(0, len(self.documents), self.batch_size):
-            batch = [doc["text"] for doc in self.documents[i:i+self.batch_size]]
-            batch_embeddings = self.model.encode(batch, show_progress_bar=True)
+            batch = [[doc["source"], doc["text"]] for doc in self.documents[i:i+self.batch_size]]
+            batch_embeddings = self.doc_model.encode(batch, show_progress_bar=True)
             embeddings.append(batch_embeddings)
         
         # Stack all embeddings
         embeddings = np.vstack(embeddings)
         
         # Create FAISS index
-        self.index = faiss.IndexFlatL2(embeddings.shape[1])  # L2 distance
+        
+        assert embeddings.shape[1] == 768, "Expected embedding dimension is 768 for MedCPT-Article-Encoder."
+        self.index = faiss.IndexFlatL2(768)  # L2 distance
+        # self.index = faiss.IndexHNSWFlat(768, 32)
         if self.device == "cuda":
             print("Using GPU for indexing...")
             res = faiss.StandardGpuResources()
@@ -166,7 +197,7 @@ class FAISSRetriever:
 
     def retrieve(self, query, top_k=5):
         # Encode the query
-        query_embedding = self.model.encode([query], show_progress_bar=False)
+        query_embedding = self.query_model.encode([query], show_progress_bar=False)
         # Perform the search
         D, I = self.index.search(query_embedding, top_k)
         
@@ -181,12 +212,15 @@ class FAISSRetriever:
             for j, i in enumerate(I[0])
         ]
         # Rank the results
-        ranked_scores = self.ranker.rank(query, results)
-        for i, score in enumerate(ranked_scores):
-            results[i]["ranked_score"] = score
-        
-        ranked_results = sorted(results, key=lambda x: x["ranked_score"][1], reverse=True)
-        return self.format_context(ranked_results)
+        if self.ranker:
+            ranked_scores = self.ranker.rank(query, results)
+            for i, score in enumerate(ranked_scores):
+                results[i]["ranker_score"] = score
+            results = sorted(results, key=lambda x: x["ranker_score"][1], reverse=True)
+        else:
+            results = sorted(results, key=lambda x: x["score"], reverse=True)
+            
+        return self.format_context(results)
     
     def format_context(self, passages):
         # Select top-k passages

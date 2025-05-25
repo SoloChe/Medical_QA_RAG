@@ -136,3 +136,18 @@ def save_qa_examples(
         json.dump(examples, f, indent=4)
     logger.info(f"Saved QA examples to {output_file}")
     model.train()  # Set the model back to training mode
+    
+def str_to_bool(value):
+    """
+    Convert a string representation of a boolean to an actual boolean.
+    Handles common representations like 'true', 'false', '1', '0', etc.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        value = value.lower()
+        if value in ('true', '1'):
+            return True
+        elif value in ('false', '0'):
+            return False
+    raise ValueError(f"Cannot convert {value} to boolean")

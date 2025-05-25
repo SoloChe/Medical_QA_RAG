@@ -1,12 +1,20 @@
 import torch
-from .template import *
+from template import *
 import re
+
 
 def extract_status(critique):
     match = re.search(r'"status"\s*:\s*(true|false|True|False)', critique)
     if match:
-        answer = match.group(1)
-        return answer
+        value = match.group(1)
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            value = value.lower()
+            if value in ('true', '1'):
+                return True
+            elif value in ('false', '0'):
+                return False
     else:
         return "unknown"
 class Corrector:
@@ -48,12 +56,12 @@ class Corrector:
         critique = self._generate(critique_prompt)
         status = extract_status(critique)
         
-        if status:
+        if isinstance(status, bool) and status:
             return status, answer, critique, None
-
-        revise_prompt = self._get_prompt("revise", question, context, options, answer, critique)
-        revised = self._generate(revise_prompt)
-        return status, answer, critique, revised
+        else:
+            revise_prompt = self._get_prompt("revise", question, context, options, answer, critique)
+            revised = self._generate(revise_prompt)
+            return status, answer, critique, revised
 
     # def multi_round_correct(self, question, context, max_rounds=2):
     #     history = []
