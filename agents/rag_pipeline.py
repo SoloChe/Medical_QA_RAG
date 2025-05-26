@@ -30,7 +30,10 @@ class RAGPipeline:
         LLM = AutoModelForCausalLM.from_pretrained(LLM_name, trust_remote_code=True).to(device)
         LLM.eval()  
         
-        self.retriever = FAISSRetriever(docs_path=retriever_path, index_path=retriever_index_path, use_ranker=use_ranker, device=device)
+        self.retriever = FAISSRetriever(docs_path=retriever_path, 
+                                        index_path=retriever_index_path, 
+                                        use_ranker=use_ranker, 
+                                        device=device)
         self.contextualizer = Contextualizer(tokenizer)
         self.generator = Generator(LLM, tokenizer, adapter_dir=generator_model_dir)
         self.corrector = Corrector(LLM, tokenizer) if use_corrector else None
@@ -44,7 +47,8 @@ class RAGPipeline:
     def run(self, question, options=None, top_k_ret=5,
             max_new_tokens_gen=1000, do_sample_gen=False):
         # Retrieve top-k passages
-        retrieved_docs = [doc for doc in self.retriever.retrieve(question, top_k=top_k_ret)]
+        # retrieved_docs = [doc for doc in self.retriever.retrieve(question, top_k=top_k_ret)]
+        retrieved_docs = self.retriever.retrieve(question, top_k=top_k_ret)
         # print(f"\n[INFO] Retrieved {len(retrieved_docs)} documents")
         
         # Contextualize the input
@@ -75,8 +79,8 @@ class RAGPipeline:
             print(f"\n[INFO] Summarized Response: {response}")
         
         if self.corrector:
-            return status, response, critique, revised_response
-        return response
+            return status, response, critique, revised_response, retrieved_docs
+        return response, retrieved_docs
 
 class NO_RAGPipeline:
     def __init__(self, LLM_name="mistralai/Mistral-7B-Instruct-v0.2", device="cpu"):
@@ -105,7 +109,7 @@ class NO_RAGPipeline:
                                          pad_token_id=self.tokenizer.eos_token_id)
         
         generated_tokens = output[0][input_len:]
-        return self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        return self.tokenizer.decode(generated_tokens, skip_special_tokens=True), None
 
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -113,8 +117,9 @@ if __name__ == "__main__":
     options = "A: Memory loss, B: Confusion, C: Both A and B, D: None of the above"
     
     rag_pipeline = RAGPipeline(device=device)
-    final_response_rag = rag_pipeline.run(question, options, top_k_ret=5)
+    final_response_rag, context = rag_pipeline.run(question, options, top_k_ret=5)
     print("\nFinal Response from RAG Pipeline:\n", final_response_rag)
+    print("\nContextualized Input:\n", context)
     
     # med_pipeline = NO_RAGPipeline(device=device)
     # final_response_med = med_pipeline.run(question, options)

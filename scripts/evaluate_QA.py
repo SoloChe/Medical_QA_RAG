@@ -80,7 +80,7 @@ def main(args):
         logger.info(f"Options: {options}")
 
         if args.rag and args.use_corrector:
-            status, pred_raw, critique, revised_pred_raw = get_response(rag, question, options, top_k_ret=args.top_k_ret)
+            status, pred_raw, critique, revised_pred_raw, retrieved_docs = get_response(rag, question, options, top_k_ret=args.top_k_ret)
             if revised_pred_raw:
                 logger.info(f"Pass: {status}")
                 logger.info(f"Initial Prediction: {pred_raw}")
@@ -92,27 +92,29 @@ def main(args):
                 logger.info(f"Initial Prediction: {pred_raw}")
                 logger.info(f"Critique: {critique}")
         else:
-            pred_raw = get_response(rag, question, options,  top_k_ret=args.top_k_ret)
+            pred_raw, retrieved_docs = get_response(rag, question, options,  top_k_ret=args.top_k_ret)
             logger.info(f"Prediction: {pred_raw}")
-        
+            
+        if retrieved_docs:
+            logger.info(f"Retrieved Documents: {retrieved_docs}")
         
         
         pred_label = extract_prediction(pred_raw)
         if pred_label == "U": count_unknown += 1
         
         logger.info(f"Answer: {answer}, Prediction: {pred_label}")
-        logger.info("=" * 50)
+        logger.info("=" * 150)
     
         predictions.append(pred_label)
         references.append(answer)
         
         if (count+1) % 10 == 0:
-            logger.info(f"+" * 100)
+            logger.info(f"+" * 150)
             logger.info(f"Evaluated {len(predictions)} samples.")
             logger.info(f"Count Unknown: {count_unknown}")
             acc = accuracy_score(references, predictions)
             logger.info(f"Accuracy: {acc:.4f}")
-            logger.info(f"+" * 100)
+            logger.info(f"+" * 150)
     
     Final_acc = accuracy_score(references, predictions)
     logger.info(f"Number of samples: {len(predictions)}")
@@ -129,8 +131,8 @@ if __name__ == "__main__":
     parser.add_argument('--log_dir', type=str, default='./logs_eval', help='Directory to save logs')
     parser.add_argument('--rag', type=str_to_bool, default=True, help='Use RAG pipeline if True, else use NO_RAG pipeline')
     parser.add_argument('--top_k_ret', type=int, default=10, help='Top K passages to retrieve in RAG pipeline')
-    parser.add_argument('--use_corrector', type=str_to_bool, default=True, help='Use corrector in RAG pipeline')
-    parser.add_argument('--use_ranker', type=str_to_bool, default=True, help='Use ranker in RAG pipeline')
+    parser.add_argument('--use_corrector', type=str_to_bool, default=False, help='Use corrector in RAG pipeline')
+    parser.add_argument('--use_ranker', type=str_to_bool, default=False, help='Use ranker in RAG pipeline')
     args = parser.parse_args()
     
     main(args)
