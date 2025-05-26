@@ -23,13 +23,15 @@ The current knowledge base is for testing only. The final knowledge base will be
 
 [05/23/2025 update]: Finished single-round correction. The current acc. on MedQA is 0.41 (corpus: textbooks, LLM: `mistralai/Mistral-7B-Instruct-v0.2`)
 
+[05/25/2025 update]: Changed the retriever to FAISS+MedCPT+Ranker. The current acc. on MedQA is 0.42 (corpus: textbooks, LLM: `mistralai/Mistral-7B-Instruct-v0.2`)
+
 [Next]: Working on multi-round self-correction loop. Will add ReAct and tool use in the future. 
 
 ## Agent Pipeline
 1. Retriever Model: FAISS+MedCPT+Ranker
 2. Contextualizer: LLM Prompt 
-3. Generator Model (LLM): `mistralai/Mistral-7B-Instruct-v0.2` (optional fine-tuning and PPO alignment available)
-4. Fact-Checker Model: (optional)
+3. Generator (LLM): `mistralai/Mistral-7B-Instruct-v0.2` (optional fine-tuning and PPO alignment available)
+4. Corrector Model: (optional)
 5. Summarizer Model: (optional)
 
 ## Fine-tuning

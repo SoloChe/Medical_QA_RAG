@@ -30,7 +30,7 @@ def load_pipeline(RAG=True, use_corrector=False, use_ranker=False, device="cpu")
         pipeline = NO_RAGPipeline(device=device)
     return pipeline
 
-def get_response(pipeline, question, options, top_k_ret=5, max_new_tokens_gen=1000, do_sample_gen=False):
+def get_response(pipeline, question, options, top_k_ret=5, max_new_tokens_gen=2000, do_sample_gen=False):
     response = pipeline.run(question,
                             options,
                             top_k_ret=top_k_ret, # this will not work for NO_RAGPipeline 
@@ -128,9 +128,9 @@ if __name__ == "__main__":
     parser.add_argument('--eval_file', type=str, default='./data/processed/MedQA.jsonl', help='Path to the eval file')
     parser.add_argument('--log_dir', type=str, default='./logs_eval', help='Directory to save logs')
     parser.add_argument('--rag', type=str_to_bool, default=True, help='Use RAG pipeline if True, else use NO_RAG pipeline')
-    parser.add_argument('--top_k_ret', type=int, default=5, help='Top K passages to retrieve in RAG pipeline')
-    parser.add_argument('--use_corrector', type=str_to_bool, default=False, help='Use corrector in RAG pipeline')
-    parser.add_argument('--use_ranker', type=str_to_bool, default=False, help='Use ranker in RAG pipeline')
+    parser.add_argument('--top_k_ret', type=int, default=10, help='Top K passages to retrieve in RAG pipeline')
+    parser.add_argument('--use_corrector', type=str_to_bool, default=True, help='Use corrector in RAG pipeline')
+    parser.add_argument('--use_ranker', type=str_to_bool, default=True, help='Use ranker in RAG pipeline')
     args = parser.parse_args()
     
     main(args)
