@@ -47,7 +47,6 @@ class RAGPipeline:
     def run(self, question, options=None, top_k_ret=5,
             max_new_tokens_gen=1000, do_sample_gen=False):
         # Retrieve top-k passages
-        # retrieved_docs = [doc for doc in self.retriever.retrieve(question, top_k=top_k_ret)]
         retrieved_docs = self.retriever.retrieve(question, top_k=top_k_ret)
         # print(f"\n[INFO] Retrieved {len(retrieved_docs)} documents")
         
@@ -64,22 +63,23 @@ class RAGPipeline:
         if self.corrector:
             status, response, critique, revised_response = self.corrector.correct(question, retrieved_docs, options, response)
         
+            return status, response, critique, revised_response, retrieved_docs
+        
         # Fact check the response
-        if self.fact_checker:
-            is_factually_correct, top_matches = self.fact_checker.check_fact(response, retrieved_docs)
-            print(f"\n[INFO] Fact Check: {'PASS' if is_factually_correct else 'FAIL'}")
-            if not is_factually_correct:
-                print("[INFO] Top Supporting Passages:")
-                for context, score in top_matches:
-                    print(f"Score: {score:.4f} | Context: {context}")
+        # if self.fact_checker:
+        #     is_factually_correct, top_matches = self.fact_checker.check_fact(response, retrieved_docs)
+        #     print(f"\n[INFO] Fact Check: {'PASS' if is_factually_correct else 'FAIL'}")
+        #     if not is_factually_correct:
+        #         print("[INFO] Top Supporting Passages:")
+        #         for context, score in top_matches:
+        #             print(f"Score: {score:.4f} | Context: {context}")
         
         # Summarize the response (optional)
-        if self.summarizer:
-            response = self.summarizer.summarize(response)
-            print(f"\n[INFO] Summarized Response: {response}")
+        # if self.summarizer:
+        #     response = self.summarizer.summarize(response)
+        #     print(f"\n[INFO] Summarized Response: {response}")
         
-        if self.corrector:
-            return status, response, critique, revised_response, retrieved_docs
+        
         return response, retrieved_docs
 
 class NO_RAGPipeline:

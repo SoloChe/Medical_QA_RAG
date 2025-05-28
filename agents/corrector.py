@@ -2,26 +2,33 @@ import torch
 from template import *
 import re
 
-
-def extract_status(critique):
-    match = re.search(r'"status"\s*:\s*(true|false|True|False)', critique)
-    if match:
-        value = match.group(1)
-        if isinstance(value, bool):
-            return value
-        if isinstance(value, str):
-            value = value.lower()
-            if value in ('true', '1'):
-                return True
-            elif value in ('false', '0'):
-                return False
-    else:
-        return "unknown"
 class Corrector:
     def __init__(self, model, tokenizer):
         self.tokenizer = tokenizer
         self.model = model
         self.device = self.model.device
+    
+    @staticmethod
+    def _extract_status(critique):
+        match = re.search(r'"status"\s*:\s*(true|false|True|False)', critique)
+        if match:
+            value = match.group(1)
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, str):
+                value = value.lower()
+                if value in ('true', '1'):
+                    return True
+                elif value in ('false', '0'):
+                    return False
+        else:
+            return "unknown"
+        
+    @staticmethod
+    def _extract_missing_context(critique):
+        match = re.search(r'"missing_documents"\s*:\s*"([^"]+)"', critique)
+        missing_context = match.group(1) 
+        return None if missing_context == "None" else missing_context
         
     def _generate(self, prompt, max_new_tokens=2000, do_sample=False):
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
@@ -54,7 +61,9 @@ class Corrector:
     def correct(self, question, context, options, answer):
         critique_prompt = self._get_prompt("critique", question, context, options, answer)
         critique = self._generate(critique_prompt)
-        status = extract_status(critique)
+        status = self._extract_status(critique)
+        # TODO: handle the case 
+        missing_context = self._extract_missing_context(critique)
         
         if isinstance(status, bool) and status:
             return status, answer, critique, None
