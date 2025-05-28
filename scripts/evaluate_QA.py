@@ -131,7 +131,7 @@ if __name__ == "__main__":
     parser.add_argument('--log_dir', type=str, default='./logs_eval', help='Directory to save logs')
     parser.add_argument('--rag', type=str_to_bool, default=True, help='Use RAG pipeline if True, else use NO_RAG pipeline')
     parser.add_argument('--top_k_ret', type=int, default=10, help='Top K passages to retrieve in RAG pipeline')
-    parser.add_argument('--use_corrector', type=str_to_bool, default=False, help='Use corrector in RAG pipeline')
+    parser.add_argument('--use_corrector', type=str_to_bool, default=True, help='Use corrector in RAG pipeline')
     parser.add_argument('--use_ranker', type=str_to_bool, default=False, help='Use ranker in RAG pipeline')
     args = parser.parse_args()
     

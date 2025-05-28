@@ -1,7 +1,7 @@
 from liquid import Template
 # from https://github.com/SoloChe/MedRAG/blob/main/src/template.py
 
-general_medrag_system = '''You are a helpful medical expert, and your task is to answer a binary-choice or multi-choice medical question using the relevant documents. Please first think step-by-step and then choose only one answer from the provided options. Organize your output in a json formatted as Dict{"step_by_step_thinking": Str(explanation), "answer_choice": Str{A/B/C/...}}. Your responses will be used for research purposes only, so please have a definite answer. If you are not sure, please fill the "answer_choice" with "U".'''
+general_medrag_system = '''You are a helpful medical expert, and your task is to answer a binary-choice or multi-choice medical question using the relevant documents. Please first think step-by-step and then choose only one answer from the provided options. Organize your output in a json formatted as Dict{"step_by_step_thinking": Str(explanation), "answer_choice": Str{A/B/C/...}}. Your responses will be used for research purposes only, so please have a definite answer. If you are not sure, select the most possible option.'''
 general_medrag = Template(
             '''
             Here are the relevant documents (most relevant first):
@@ -17,7 +17,7 @@ general_medrag = Template(
             '''
 )
 
-general_med_system = '''You are a helpful medical expert, and your task is to answer a binary-choice or multi-choice medical question. Please first think step-by-step and then choose the answer from the provided options. Organize your output in a json formatted as Dict{"step_by_step_thinking": Str(explanation), "answer_choice": Str{A/B/C/...}}. Your responses will be used for research purposes only, so please have a definite answer. If you are not sure, please fill the "answer_choice" with "U".'''
+general_med_system = '''You are a helpful medical expert, and your task is to answer a binary-choice or multi-choice medical question. Please first think step-by-step and then choose the answer from the provided options. Organize your output in a json formatted as Dict{"step_by_step_thinking": Str(explanation), "answer_choice": Str{A/B/C/...}}. Your responses will be used for research purposes only, so please have a definite answer. If you are not sure, select the most possible option.'''
 general_med = Template(
             '''
             Here is the question:
@@ -78,7 +78,7 @@ general_critique = Template(
             '''
 )
 
-general_revise_system = '''You are a senior medical expert and your task is to revise the answer of a given binary-choice or multi-choice medical question based on the given retrieved context and comments from another medical expert to make it medically accurate and comprehensive. Please first think step-by-step and then choose only one answer from the provided options. Organize your output in a json formatted as Dict{"step_by_step_thinking": Str(explanation), "answer_choice": Str{A/B/C/...}}. Your responses will be used for research purposes only, so please have a definite answer. If you are not sure, please fill the "answer_choice" with "U".'''
+general_revise_system = '''You are a senior medical expert and your task is to revise the answer of a given binary-choice or multi-choice medical question based on the given retrieved context and comments from another medical expert to make it medically accurate and comprehensive. Please first think step-by-step and then choose only one answer from the provided options. Organize your output in a json formatted as Dict{"step_by_step_thinking": Str(explanation), "answer_choice": Str{A/B/C/...}}. Your responses will be used for research purposes only, so please have a definite answer. If you are not sure, If you are not sure, select the most possible option.'''
 general_revise = Template(
             '''
             Here are the relevant documents (most relevant first):
