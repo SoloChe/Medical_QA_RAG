@@ -2,10 +2,12 @@ import json
 import os
 import argparse
 
-#TODO: prompt design for instruct model
+# TODO: prompt design for instruct model
+
 
 def clean_text(text):
     return text.replace("\n", " ").replace("\t", " ").strip()
+
 
 def process_pubmedqa(input_file, output_file):
     # Process the nested JSON structure
@@ -18,7 +20,7 @@ def process_pubmedqa(input_file, output_file):
             contexts = sample.get("CONTEXTS", [])
             long_answer = sample.get("LONG_ANSWER", "").strip()
             short_answer = sample.get("final_decision")
-            
+
             # Process long answer
             # join all contexts into a single string
             contexts = "\n".join(contexts)
@@ -32,14 +34,23 @@ def process_pubmedqa(input_file, output_file):
             }
             outfile.write(json.dumps(entry) + "\n")
 
-
     print(f"Processed chunks saved to {output_file}")
-    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process PubMedQA data")
-    parser.add_argument("--input_dir", type=str, default="./data/raw/PubMedQA/ori_pqal.json", help="Path to the input JSON file")
-    parser.add_argument("--output_dir", type=str, default="./data/processed/PubMedQA.jsonl", help="Path to save the processed JSONL file")
+    parser.add_argument(
+        "--input_dir",
+        type=str,
+        default="./data/raw/PubMedQA/ori_pqal.json",
+        help="Path to the input JSON file",
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="./data/processed/PubMedQA.jsonl",
+        help="Path to save the processed JSONL file",
+    )
 
     args = parser.parse_args()
 
@@ -48,5 +59,3 @@ if __name__ == "__main__":
 
     # Run the processing function
     process_pubmedqa(args.input_dir, args.output_dir)
-
-   

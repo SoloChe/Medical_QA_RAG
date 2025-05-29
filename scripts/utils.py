@@ -89,20 +89,20 @@ def save_qa_examples(
     for sample in val_dataset.select(range(num_examples)):
         # Prepare the input and generate the response
         instruction_text = sample["instruction"]
-        true_response_text = sample["response"][1:-5] # remove the fist space and last </s> token
-        
+        true_response_text = sample["response"][
+            1:-5
+        ]  # remove the fist space and last </s> token
+
         instruction_token = tokenizer(
             instruction_text,
             truncation=True,
             padding="max_length",
             max_length=512,
-            return_tensors="pt").to(model.device)
+            return_tensors="pt",
+        ).to(model.device)
 
         model_output = model.generate(
-            **instruction_token,
-            max_new_tokens=50,
-            do_sample=False,
-            num_beams=1
+            **instruction_token, max_new_tokens=50, do_sample=False, num_beams=1
         )
         generated_response = tokenizer.decode(model_output[0], skip_special_tokens=True)
 
@@ -136,7 +136,8 @@ def save_qa_examples(
         json.dump(examples, f, indent=4)
     logger.info(f"Saved QA examples to {output_file}")
     model.train()  # Set the model back to training mode
-    
+
+
 def str_to_bool(value):
     """
     Convert a string representation of a boolean to an actual boolean.
@@ -146,8 +147,8 @@ def str_to_bool(value):
         return value
     if isinstance(value, str):
         value = value.lower()
-        if value in ('true', '1'):
+        if value in ("true", "1"):
             return True
-        elif value in ('false', '0'):
+        elif value in ("false", "0"):
             return False
     raise ValueError(f"Cannot convert {value} to boolean")

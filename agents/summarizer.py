@@ -1,6 +1,7 @@
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 
+
 class Summarizer:
     def __init__(self, model, tokenizer, max_length=1000):
         self.tokenizer = tokenizer
@@ -8,10 +9,14 @@ class Summarizer:
         self.max_length = max_length
         self.device = model.device
 
-    def summarize(self, text, max_length=None, min_length=30, do_sample=False, temperature=0.7):
+    def summarize(
+        self, text, max_length=None, min_length=30, do_sample=False, temperature=0.7
+    ):
         # Ensure max_length is set
         max_length = max_length or self.max_length
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=max_length).to(self.device)
+        inputs = self.tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=max_length
+        ).to(self.device)
         summary_ids = self.model.generate(
             **inputs,
             max_length=max_length,
@@ -23,6 +28,7 @@ class Summarizer:
             early_stopping=True
         )
         return self.tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+
 
 if __name__ == "__main__":
     summarizer = Summarizer()
