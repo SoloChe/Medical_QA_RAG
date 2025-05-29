@@ -1,5 +1,5 @@
 from transformers import AutoTokenizer
-from template import *
+from prompts.template import *
 
 
 class Contextualizer:

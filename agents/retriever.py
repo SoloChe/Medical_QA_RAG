@@ -11,7 +11,7 @@ from transformers import (
     AutoModelForSequenceClassification,
     AutoModelForCausalLM,
 )
-from template import *
+from prompts.template import *
 import json
 
 

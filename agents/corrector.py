@@ -1,5 +1,5 @@
 import torch
-from template import *
+from prompts.template import *
 import re
 
 

@@ -12,7 +12,7 @@ from datasets import load_dataset
 import time
 import logging
 import re
-from utils import str_to_bool
+from scripts.utils import str_to_bool
 
 
 def extract_prediction(llm_output):
@@ -171,7 +171,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--use_corrector",
         type=str_to_bool,
-        default=True,
+        default=False,
         help="Use corrector in RAG pipeline",
     )
     parser.add_argument(

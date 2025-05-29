@@ -1,16 +1,10 @@
-import os
-import sys
-
-root_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(root_dir)
-
-from retriever import FAISSRetriever
-from contextualizer import Contextualizer
-from generator import Generator
-from fact_checker import FactChecker
-from summarizer import Summarizer
-from corrector import Corrector
-from template import *
+from agents.retriever import FAISSRetriever
+from agents.contextualizer import Contextualizer
+from agents.generator import Generator
+from agents.fact_checker import FactChecker
+from agents.summarizer import Summarizer
+from agents.corrector import Corrector
+from prompts.template import *
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -120,7 +114,7 @@ class NO_RAGPipeline:
         self,
         question,
         options,
-        top_k_ret=0,
+        top_k_ret=0, # placeholder for compatibility
         max_new_tokens_gen=1000,
         do_sample_gen=False,
     ):

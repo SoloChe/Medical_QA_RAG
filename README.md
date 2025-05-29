@@ -1,7 +1,7 @@
 # Medical QA RAG System (updating)
-This repository contains a medical question-answering system that utilizes Retrieval-Augmented Generation (RAG). The system is designed to answer medical questions by retrieving relevant documents from a knowledge base consists of textbooks used in ([MedQA](https://github.com/jind11/MedQA)) and/or online search (ReAct). Finally, the system can be deployed on AWS using Docker and SageMaker. 
+This repository contains a medical question-answering system that utilizes Retrieval-Augmented Generation (RAG). The system is designed to answer medical questions by retrieving relevant documents from a corpus base consists of textbooks used in ([MedQA](https://github.com/jind11/MedQA)) and/or online search (ReAct). Finally, the system can be deployed on AWS using Docker and SageMaker. 
 
-The current knowledge base is for testing only. The final knowledge base will be a collection of medical documents, including PubMed articles, clinical guidelines, and other relevant resources. The system is designed to be extensible and can be easily adapted to different domains or datasets.
+The current corpus is for testing only. The final knowledge base will be a collection of medical documents, including PubMed articles, clinical guidelines, and other relevant resources. The system is designed to be extensible and can be easily adapted to different domains or datasets.
 
 [05/08/2025 update]: Finished the training scripts of LoRa and RAG pipeline.
 
@@ -29,10 +29,15 @@ The current knowledge base is for testing only. The final knowledge base will be
 
 ## Agent Pipeline
 1. Retriever Model: FAISS+MedCPT+Ranker
-2. Contextualizer: LLM Prompt 
-3. Generator (LLM): `mistralai/Mistral-7B-Instruct-v0.2` (optional fine-tuning and PPO alignment available)
-4. Corrector Model: (optional)
-5. Summarizer Model: (optional)
+   - FAISS is used for efficient similarity search in the corpus.
+   - MedCPT is used to encode the medical questions and documents.
+   - Ranker (optional) is used to re-rank the retrieved documents.
+2. Contextualizer: Used to build LLM prompt 
+3. Generator: LLM
+   - Currently, `mistralai/Mistral-7B-Instruct-v0.2` (optional fine-tuning and PPO alignment available) is used for testing.
+   - It will be replaced with LLM API in the future.  
+4. Corrector Model (optional): Used to criticize the generated answer and provide feedback for revision.
+5. Summarizer Model (optional): Used to summarize the final answer.
 
 ## Fine-tuning
 The generator model is fine-tuned using LoRa and PPO for alignment. The configuration files for both methods are provided in the `configs` directory. The fine-tuning process is performed using the Hugging Face Trainer API (LoRa) and customized training loops (LoRa+PPO) on HPC (Slurm job schedular) with Nvidia-A100@80GB. The training scripts are located in the `scripts` directory. The fine-tuned models are saved in the `saved_models` directory (not uploaded).
