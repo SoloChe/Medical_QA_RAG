@@ -13,10 +13,11 @@ from transformers import (
 )
 from prompts.template import *
 import json
+from typing import List, Dict
 
 
 class Ranker:
-    def __init__(self, device):
+    def __init__(self, device: str) -> None:
         self.device = device
         model_name = "gsarti/biobert-nli"  # or use a biomedical reranker
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -25,7 +26,7 @@ class Ranker:
         )
         self.model.eval()
 
-    def rank(self, query, docs):
+    def rank(self, query: str, docs: str) -> list:
         pairs = [f"{query} [SEP] {doc['text']}" for doc in docs]
         inputs = self.tokenizer(
             pairs, padding=True, max_length=512, truncation=True, return_tensors="pt"
@@ -37,14 +38,18 @@ class Ranker:
 
 
 class Parser:
-    def __init__(self, model_name="mistralai/Mistral-7B-Instruct-v0.2", device="cpu"):
+    def __init__(
+        self,
+        model_name: str = "mistralai/Mistral-7B-Instruct-v0.2",
+        device: str = "cpu",
+    ) -> None:
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.tokenizer.pad_token = self.tokenizer.eos_token
         self.model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
         self.model.eval()
         self.device = device
 
-    def get_prompt(self, question):
+    def get_prompt(self, question: str) -> List[Dict[str, str]]:
         question_parse_prompt = question_parse.render(question=question)
         messages = [
             {"role": "system", "content": question_parse_system},
@@ -52,11 +57,11 @@ class Parser:
         ]
         return messages
 
-    def string_to_list(self, string):
+    def string_to_list(self, string: str) -> list:
         sub_questions = json.loads(string)
         return sub_questions["sub_questions"]
 
-    def question_parse(self, question):
+    def question_parse(self, question: str) -> list:
 
         # Generate the prompt using the chat template
         formatted_prompt = self.tokenizer.apply_chat_template(
@@ -134,13 +139,13 @@ class CustomizeSentenceTransformer(
 class FAISSRetriever:
     def __init__(
         self,
-        docs_path="./data/KB_books_v2",
-        index_path="./data/KB_books_v2/books_index.faiss",
-        model_name="ncbi/MedCPT-Query-Encoder",
-        batch_size=256,
-        use_ranker=False,
-        device="cpu",
-    ):
+        docs_path: str = "./data/KB_books_v2",
+        index_path: str = "./data/KB_books_v2/books_index.faiss",
+        model_name: str = "ncbi/MedCPT-Query-Encoder",
+        batch_size: int = 256,
+        use_ranker: bool = False,
+        device: str = "cpu",
+    ) -> None:
 
         self.docs_path = docs_path
         self.index_path = index_path
@@ -238,13 +243,11 @@ class FAISSRetriever:
         res = faiss.StandardGpuResources()
         self.index = faiss.index_cpu_to_gpu(res, 0, self.index)
 
-    def retrieve(self, query, top_k=5):
+    def retrieve(self, query: str, top_k: int = 5) -> str:
         # Encode the query
         query_embedding = self.query_model.encode([query], show_progress_bar=False)
         # Perform the search
         D, I = self.index.search(query_embedding, top_k)
-
-        # Return results
         results = [
             {
                 "text": self.documents[i]["text"],
@@ -265,12 +268,10 @@ class FAISSRetriever:
 
         return self.format_context(results)
 
-    def format_context(self, passages):
-        # Select top-k passages
-        top_passages = passages
+    def format_context(self, passages: List[str]) -> str:
         # Combine passages with metadata for citation
         context_passages = []
-        for idx, p in enumerate(top_passages):
+        for idx, p in enumerate(passages):
             source = p.get("source", "unknown")
             chunk_id = p.get("chunk_id", f"chunk_{idx}")
             text = p["text"].strip()

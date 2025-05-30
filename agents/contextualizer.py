@@ -1,13 +1,14 @@
 from transformers import AutoTokenizer
 from prompts.template import *
+from typing import List, Dict, Optional
 
 
 class Contextualizer:
-    def __init__(self, tokenizer, max_length=4000):
+    def __init__(self, tokenizer: AutoTokenizer, max_length: int = 4000) -> None:
         self.max_length = max_length
         self.tokenizer = tokenizer
 
-    def truncate_context(self, text):
+    def truncate_context(self, text: str) -> str:
         # Tokenize to check length
         text = self.tokenizer.apply_chat_template(
             text, tokenize=False, add_generation_prompt=True
@@ -19,7 +20,9 @@ class Contextualizer:
         truncated_text = self.tokenizer.decode(tokens, skip_special_tokens=True)
         return truncated_text
 
-    def build_input(self, question, context, options=None):
+    def build_input(
+        self, question: str, context: str, options: Optional[str] = None
+    ) -> str:
         # Format the full_prompt
         full_prompt = self.prepare_prompt(
             question, context, options, free=(options == None)
@@ -27,7 +30,9 @@ class Contextualizer:
         # Truncate if too long
         return self.truncate_context(full_prompt)
 
-    def prepare_prompt(self, question, context, options, free=False):
+    def prepare_prompt(
+        self, question: str, context: str, options: str, free: Optional[bool] = False
+    ) -> List[Dict[str, str]]:
 
         if not free:
             prompt_medrag = general_medrag.render(

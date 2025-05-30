@@ -7,21 +7,22 @@ from agents.corrector import Corrector
 from prompts.template import *
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from typing import Tuple, Optional, Union
 
 
 class RAGPipeline:
     def __init__(
         self,
-        retriever_path="./data/KB_books_v2",
-        retriever_index_path="./data/KB_books_v2/books_index.faiss",  # v2: MedCPT-Query-Encoder
-        LLM_name="mistralai/Mistral-7B-Instruct-v0.2",
-        generator_model_dir=None,
-        use_corrector=False,
-        use_ranker=False,
-        fact_checker_model=None,  # "all-mpnet-base-v2",
-        summarizer_model=None,  # "facebook/bart-large-cnn",
-        device="cpu",
-    ):
+        retriever_path: str = "./data/KB_books_v2",
+        retriever_index_path: str = "./data/KB_books_v2/books_index.faiss",  # v2: MedCPT-Query-Encoder
+        LLM_name: str = "mistralai/Mistral-7B-Instruct-v0.2",
+        generator_model_dir: str = None,
+        use_corrector: bool = False,
+        use_ranker: bool = False,
+        fact_checker_model: Optional[str] = None,  # "all-mpnet-base-v2",
+        summarizer_model: Optional[str] = None,  # "facebook/bart-large-cnn",
+        device: str = "cpu",
+    ) -> None:
 
         tokenizer = AutoTokenizer.from_pretrained(LLM_name, trust_remote_code=True)
         tokenizer.pad_token = tokenizer.eos_token
@@ -54,12 +55,13 @@ class RAGPipeline:
 
     def run(
         self,
-        question,
-        options=None,
-        top_k_ret=5,
-        max_new_tokens_gen=1000,
-        do_sample_gen=False,
-    ):
+        question: str,
+        options: Optional[str] = None,
+        top_k_ret: int = 5,
+        max_new_tokens_gen: int = 1000,
+        do_sample_gen: bool = False,
+    ) -> Union[Tuple[bool, str, str, Optional[str]], Tuple[str, str]]:
+
         # Retrieve top-k passages
         retrieved_docs = self.retriever.retrieve(question, top_k=top_k_ret)
         # print(f"\n[INFO] Retrieved {len(retrieved_docs)} documents")
@@ -83,25 +85,13 @@ class RAGPipeline:
 
             return status, response, critique, revised_response, retrieved_docs
 
-        # Fact check the response
-        # if self.fact_checker:
-        #     is_factually_correct, top_matches = self.fact_checker.check_fact(response, retrieved_docs)
-        #     print(f"\n[INFO] Fact Check: {'PASS' if is_factually_correct else 'FAIL'}")
-        #     if not is_factually_correct:
-        #         print("[INFO] Top Supporting Passages:")
-        #         for context, score in top_matches:
-        #             print(f"Score: {score:.4f} | Context: {context}")
-
-        # Summarize the response (optional)
-        # if self.summarizer:
-        #     response = self.summarizer.summarize(response)
-        #     print(f"\n[INFO] Summarized Response: {response}")
-
         return response, retrieved_docs
 
 
 class NO_RAGPipeline:
-    def __init__(self, LLM_name="mistralai/Mistral-7B-Instruct-v0.2", device="cpu"):
+    def __init__(
+        self, LLM_name: str = "mistralai/Mistral-7B-Instruct-v0.2", device: str = "cpu"
+    ) -> None:
         self.tokenizer = AutoTokenizer.from_pretrained(LLM_name, trust_remote_code=True)
         self.tokenizer.pad_token = self.tokenizer.eos_token
         self.model = AutoModelForCausalLM.from_pretrained(
@@ -112,12 +102,13 @@ class NO_RAGPipeline:
 
     def run(
         self,
-        question,
-        options,
-        top_k_ret=0, # placeholder for compatibility
-        max_new_tokens_gen=1000,
-        do_sample_gen=False,
-    ):
+        question: str,
+        options: str = None,
+        top_k_ret: int = 0,  # placeholder for compatibility
+        max_new_tokens_gen: int = 1000,
+        do_sample_gen: bool = False,
+    ) -> Tuple[str, None]:
+
         prompt_med = general_med.render(question=question, options=options)
         messages = [
             {"role": "system", "content": general_med_system},
@@ -145,10 +136,10 @@ class NO_RAGPipeline:
 
 
 if __name__ == "__main__":
+    # testing
     device = "cuda" if torch.cuda.is_available() else "cpu"
     question = "What are the symptoms of Alzheimer's disease?"
     options = "A: Memory loss, B: Confusion, C: Both A and B, D: None of the above"
-
     rag_pipeline = RAGPipeline(device=device)
     final_response_rag, context = rag_pipeline.run(question, options, top_k_ret=5)
     print("\nFinal Response from RAG Pipeline:\n", final_response_rag)

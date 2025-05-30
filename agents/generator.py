@@ -1,9 +1,12 @@
 from peft import PeftModel
 import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 class Generator:
-    def __init__(self, model, tokenizer, adapter_dir):
+    def __init__(
+        self, model: AutoModelForCausalLM, tokenizer: AutoTokenizer, adapter_dir: str
+    ) -> None:
         # Load the tokenizer
         self.tokenizer = tokenizer
         self.model = model
@@ -18,7 +21,9 @@ class Generator:
             # Load the base model without LoRA
             self.model = self.model.to(self.device)
 
-    def generate(self, prompt, max_new_tokens=2000, do_sample=False):
+    def generate(
+        self, prompt: str, max_new_tokens: int = 2000, do_sample: bool = False
+    ) -> str:
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
         input_len = inputs["input_ids"].shape[1]
         with torch.no_grad():  # Disable gradient computation for inference

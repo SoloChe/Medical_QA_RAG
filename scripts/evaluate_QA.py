@@ -13,9 +13,10 @@ import time
 import logging
 import re
 from scripts.utils import str_to_bool
+from typing import Union, Tuple, Optional
 
 
-def extract_prediction(llm_output):
+def extract_prediction(llm_output: str) -> str:
     match = re.search(r'"answer_choice"\s*:\s*"([^"]+)"', llm_output)
     if match:
         answer = match.group(1)
@@ -24,7 +25,12 @@ def extract_prediction(llm_output):
         return "unknown"
 
 
-def load_pipeline(RAG=True, use_corrector=False, use_ranker=False, device="cpu"):
+def load_pipeline(
+    RAG: bool = True,
+    use_corrector: bool = False,
+    use_ranker: bool = False,
+    device: str = "cpu",
+) -> Union[RAGPipeline, NO_RAGPipeline]:
     if RAG:
         pipeline = RAGPipeline(
             use_ranker=use_ranker, use_corrector=use_corrector, device=device
@@ -35,13 +41,16 @@ def load_pipeline(RAG=True, use_corrector=False, use_ranker=False, device="cpu")
 
 
 def get_response(
-    pipeline,
-    question,
-    options,
-    top_k_ret=5,
-    max_new_tokens_gen=2000,
-    do_sample_gen=False,
-):
+    pipeline: Union[RAGPipeline, NO_RAGPipeline],
+    question: str,
+    options: str,
+    top_k_ret: int = 5,
+    max_new_tokens_gen: int = 2000,
+    do_sample_gen: bool = False,
+) -> Union[
+    Tuple[str, None], Tuple[str, str], Tuple[Tuple[bool, str, str, Optional[str]]]
+]:
+
     response = pipeline.run(
         question,
         options,
@@ -171,7 +180,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--use_corrector",
         type=str_to_bool,
-        default=False,
+        default=True,
         help="Use corrector in RAG pipeline",
     )
     parser.add_argument(

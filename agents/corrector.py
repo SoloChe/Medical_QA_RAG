@@ -1,15 +1,25 @@
 import torch
 from prompts.template import *
 import re
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from typing import Optional, Tuple, Union
 
 
 class Corrector:
-    def __init__(self, model, tokenizer):
+    def __init__(self, model: AutoModelForCausalLM, tokenizer: AutoTokenizer) -> None:
         self.tokenizer = tokenizer
         self.model = model
         self.device = self.model.device
 
-    def _get_prompt(self, task, question, context, options, answer, critique=None):
+    def _get_prompt(
+        self,
+        task: str,
+        question: str,
+        context: str,
+        options: str,
+        answer: str,
+        critique: Optional[str] = None,
+    ) -> str:
         if task == "critique":
             prompt_critique = general_critique.render(
                 context=context, question=question, options=options, LLM_answer=answer
@@ -38,7 +48,9 @@ class Corrector:
         )
         return prompt
 
-    def correct(self, question, context, options, answer):
+    def correct(
+        self, question: str, context: str, options: str, answer: str
+    ) -> Tuple[bool, str, str, Optional[str]]:
         critique_prompt = self._get_prompt(
             "critique", question, context, options, answer
         )
@@ -78,7 +90,7 @@ class Corrector:
     #     return history
 
     @staticmethod
-    def _extract_status(critique):
+    def _extract_status(critique: str) -> Union[bool, str]:
         match = re.search(r'"status"\s*:\s*(true|false|True|False)', critique)
         if match:
             value = match.group(1)
@@ -94,12 +106,14 @@ class Corrector:
             return "unknown"
 
     @staticmethod
-    def _extract_missing_context(critique):
+    def _extract_missing_context(critique: str) -> Optional[str]:
         match = re.search(r'"missing_documents"\s*:\s*"([^"]+)"', critique)
         missing_context = match.group(1) if match else "None"
         return None if missing_context == "None" else missing_context
 
-    def _generate(self, prompt, max_new_tokens=2000, do_sample=False):
+    def _generate(
+        self, prompt: str, max_new_tokens: int = 2000, do_sample: bool = False
+    ) -> str:
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
         input_len = inputs["input_ids"].shape[1]
         with torch.no_grad():
