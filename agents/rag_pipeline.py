@@ -1,8 +1,6 @@
 from agents.retriever import FAISSRetriever
 from agents.contextualizer import Contextualizer
 from agents.generator import Generator
-from agents.fact_checker import FactChecker
-from agents.summarizer import Summarizer
 from agents.corrector import Corrector
 from prompts.template import *
 import torch
@@ -19,8 +17,6 @@ class RAGPipeline:
         generator_model_dir: str = None,
         use_corrector: bool = False,
         use_ranker: bool = False,
-        fact_checker_model: Optional[str] = None,  # "all-mpnet-base-v2",
-        summarizer_model: Optional[str] = None,  # "facebook/bart-large-cnn",
         device: str = "cpu",
     ) -> None:
 
@@ -41,17 +37,6 @@ class RAGPipeline:
         self.generator = Generator(LLM, tokenizer, adapter_dir=generator_model_dir)
         self.corrector = Corrector(LLM, tokenizer) if use_corrector else None
 
-        # Optional components
-        self.fact_checker = (
-            FactChecker(model_name=fact_checker_model, device=device)
-            if fact_checker_model
-            else None
-        )
-        self.summarizer = (
-            Summarizer(model_name=summarizer_model, device=device)
-            if summarizer_model
-            else None
-        )
 
     def run(
         self,
